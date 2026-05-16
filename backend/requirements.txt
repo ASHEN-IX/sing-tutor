@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+websockets
+# Audio & analysis deps (pinned for compatibility)
+librosa==0.10.1
+numpy==1.26.4
+scipy==1.11.4
+soundfile==0.12.1
+
+pydantic
+python-dotenv
+# Optional ML deps removed to keep backend lightweight; add if needed later

@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-bg-0: #06050f;
+  --color-bg-1: #0f1122;
+  --color-bg-2: #1a1238;
+  --color-surface-0: rgb(15 17 34 / 72%);
+  --color-surface-1: rgb(24 18 53 / 80%);
+  --color-border: rgb(196 181 253 / 28%);
+  --color-text: #f9f8ff;
+  --color-text-soft: rgb(233 220 255 / 76%);
+  --color-primary: #a78bfa;
+  --color-secondary: #f472b6;
+  --color-focus: #f0abfc;
+  --radius-card: 1rem;
+  --shadow-elevated: 0 24px 64px rgb(112 64 198 / 20%);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -14,8 +30,132 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: var(--color-text);
+  line-height: 1.5;
+  background:
+    radial-gradient(circle at 15% 10%, rgb(167 139 250 / 30%), transparent 38%),
+    radial-gradient(circle at 80% 22%, rgb(244 114 182 / 22%), transparent 35%),
+    linear-gradient(160deg, var(--color-bg-0), var(--color-bg-1), var(--color-bg-2));
+  min-height: 100%;
 }
 
 #root {
   min-height: 100vh;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3.5rem;
+  z-index: 150;
+  border-radius: 0.75rem;
+  background: var(--color-surface-1);
+  color: var(--color-text);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  border: 1px solid var(--color-border);
+}
+
+@layer components {
+  .app-shell {
+    @apply relative min-h-screen overflow-x-clip;
+  }
+
+  .page-container {
+    @apply mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14;
+  }
+
+  .surface-card {
+    background: linear-gradient(145deg, var(--color-surface-0), var(--color-surface-1));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-elevated);
+    @apply backdrop-blur-xl;
+  }
+
+  .section-title {
+    @apply text-3xl font-bold text-light sm:text-4xl;
+  }
+
+  .section-copy {
+    color: var(--color-text-soft);
+    @apply text-base sm:text-lg;
+  }
+
+  .btn-primary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-dark transition-transform duration-300 hover:scale-[1.02] sm:text-base;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold text-light transition-colors duration-300 hover:bg-primary/10 sm:text-base;
+    border-color: var(--color-border);
+  }
+}
+
+@layer utilities {
+  .text-soft {
+    color: var(--color-text-soft);
+  }
+
+  .tilt-card {
+    transform-style: preserve-3d;
+    transition: transform 320ms ease, border-color 260ms ease;
+  }
+
+  .tilt-card:hover {
+    transform: perspective(1200px) rotateX(3.5deg) rotateY(-3.5deg) translateY(-2px);
+    border-color: rgb(232 121 249 / 42%);
+  }
+
+  .touch-target {
+    @apply min-h-11 min-w-11;
+  }
+
+  .grain-overlay {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .grain-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.045;
+    mix-blend-mode: soft-light;
+    background-image:
+      radial-gradient(circle at 25% 20%, rgb(255 255 255 / 25%) 0 0.5px, transparent 0.8px),
+      radial-gradient(circle at 78% 60%, rgb(255 255 255 / 20%) 0 0.5px, transparent 0.8px);
+    background-size: 3px 3px, 4px 4px;
+  }
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .tilt-card:hover {
+    transform: none;
+  }
 }

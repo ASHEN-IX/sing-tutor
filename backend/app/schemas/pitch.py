@@ -42,7 +42,7 @@ class SongMetadata(BaseModel):
     artist: str
     duration: float
     bpm: int
-    key: str  # e.g., "C", "C#", etc.
+    key: str  
     difficulty: str  # beginner, intermediate, advanced
 
 

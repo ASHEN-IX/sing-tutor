@@ -3,7 +3,6 @@ import {
   SongMetadata,
   ReferenceData,
   AnalysisResult,
-  PitchDataPoint,
 } from '@/types/api';
 
 const API_BASE_URL = '/api';

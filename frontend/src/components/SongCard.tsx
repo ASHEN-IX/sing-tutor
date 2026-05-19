@@ -1,6 +1,5 @@
-import React from 'react';
 import { SongMetadata } from '@/types/api';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 interface SongCardProps {
@@ -8,6 +7,7 @@ interface SongCardProps {
 }
 
 export default function SongCard({ song }: SongCardProps) {
+  const shouldReduceMotion = useReducedMotion();
   const difficultyColor = {
     beginner: 'text-green-400',
     intermediate: 'text-yellow-400',
@@ -16,11 +16,14 @@ export default function SongCard({ song }: SongCardProps) {
 
   return (
     <motion.div
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-6 border border-primary border-opacity-20 hover:border-opacity-50 transition-all cursor-pointer group"
+      whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+      whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
+      className="tilt-card surface-card group h-full p-6"
     >
-      <Link to={`/recording/${song.id}`} className="block">
+      <Link
+        to={`/learn/${song.id}`}
+        className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark"
+      >
         <div className="mb-4">
           <h3 className="text-xl font-bold text-light group-hover:text-primary transition-colors">
             {song.title}
@@ -47,9 +50,9 @@ export default function SongCard({ song }: SongCardProps) {
           </div>
         </div>
 
-        <button className="w-full bg-primary text-dark font-bold py-2 rounded-lg group-hover:bg-secondary transition-colors">
-          Start Recording
-        </button>
+        <span className="btn-primary mt-2 w-full">
+          Learn Song
+        </span>
       </Link>
     </motion.div>
   );

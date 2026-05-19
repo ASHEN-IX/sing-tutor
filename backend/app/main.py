@@ -1,8 +1,11 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import logging
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from app.api.routes import router as api_router
 from app.api.analysis import router as analysis_router
+from app.api.songs import router as songs_router
 from app.websocket.manager import pitch_stream_manager
 from config import (
     API_TITLE,
@@ -34,7 +37,12 @@ app.add_middleware(
 # Include routers
 app.include_router(api_router)
 app.include_router(analysis_router)
+app.include_router(songs_router)
 
+# Serve static song files
+songs_dir = Path("backend/songs")
+if songs_dir.exists():
+    app.mount("/songs", StaticFiles(directory=str(songs_dir)), name="songs")
 
 @app.websocket("/ws/pitch/{recording_id}")
 async def websocket_pitch_stream(websocket: WebSocket, recording_id: str):

@@ -10,12 +10,10 @@ export interface WebSocketManager {
 class WebSocketService implements WebSocketManager {
   private ws: WebSocket | null = null;
   private messageCallbacks: ((data: PitchDataPoint) => void)[] = [];
-  private url: string = '';
 
   async connect(url: string): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.url = url;
         this.ws = new WebSocket(url);
 
         this.ws.onopen = () => {

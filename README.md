@@ -9,6 +9,8 @@ A full-stack application that uses AI to provide real-time feedback on singing p
 - **Song Library** — Practice with your favorite songs
 - **Performance Metrics** — Track pitch and timing accuracy
 - **Beautiful UI** — Modern, responsive interface with animations
+- **Song Upload & Processing** — Add songs with audio and lyrics analysis (Sprint 2)
+- **Reference Generation** — Automatic metadata extraction, beat detection, melody extraction (Sprint 2)
 
 ## 🚀 Quick Start
 
@@ -53,6 +55,9 @@ docker-compose up
 
 ## 📚 Documentation
 
+- [Sprint 2 Architecture](./docs/SPRINT2_ARCHITECTURE.md) — Song reference processing engine
+- [Sprint 2 Implementation Guide](./docs/SPRINT2_IMPLEMENTATION.md) — Setup and deployment
+- [Sprint 2 Testing Guide](./docs/SPRINT2_TESTING.md) — Testing procedures and examples
 - [API Contract](./docs/api-contract.md) — Complete API specification
 - [Architecture](./docs/architecture.md) — System design and components
 - [Sprint 0 Summary](./docs/sprint-0.md) — Project roadmap and status
@@ -104,13 +109,17 @@ ai-singing-tutor/
 
 ## 📖 API Endpoints
 
-### Songs
-- `GET /api/songs` — List all songs
-- `GET /api/songs/{song_id}` — Get song details
-- `GET /api/songs/{song_id}/reference` — Get reference pitch data
+### Songs (Sprint 2)
+- `POST /api/songs/upload` — Upload song audio and lyrics
+- `POST /api/songs/{song_id}/process` — Start processing pipeline
+- `GET /api/songs/{song_id}/status` — Check processing status
+- `GET /api/songs/{song_id}/reference` — Get complete reference JSON
+- `GET /api/songs/{song_id}/preview` — Get lightweight preview
+- `DELETE /api/songs/{song_id}` — Delete song and files
 
-### Analysis
-- `POST /api/recordings/{song_id}/analyze` — Analyze recording
+### Analysis (Sprint 3)
+- `POST /api/recordings/{song_id}/analyze` — Analyze user recording
+- `GET /api/recordings/{recording_id}/results` — Get analysis results
 
 ### Real-time
 - `WS /ws/pitch/{recording_id}` — Stream pitch data

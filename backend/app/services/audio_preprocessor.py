@@ -36,12 +36,15 @@ class AudioPreprocessor:
         """
         buffer = io.BytesIO(audio_bytes)
 
-        audio, sr = librosa.load(
-            buffer,
-            sr=target_sr,
-            mono=True,
-            dtype=np.float32,
-        )
+        try:
+            audio, sr = librosa.load(
+                buffer,
+                sr=target_sr,
+                mono=True,
+                dtype=np.float32,
+            )
+        except Exception as exc:
+            raise ValueError("Invalid or unsupported audio file.") from exc
 
         if audio.size == 0:
             raise ValueError("Empty audio file.")

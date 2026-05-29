@@ -97,25 +97,47 @@ class ReferenceBuilder:
                 pitch_data = self.melody_extractor.extract_pitch_from_file(audio_path)
 
             # Process lyrics if provided
+            match_ratio = None
             if lyrics_text:
                 logger.info("Processing lyrics")
                 words, lrc_metadata = self.lyrics_parser.parse_lyrics(lyrics_text, format="auto")
                 lyric_objects = self.lyrics_parser.create_lyric_objects(words)
 
-                # Align lyrics to beats
-                aligned_lyrics = self.lyrics_aligner.align_lyrics_to_beats(
-                    lyric_objects,
-                    beats,
-                    metadata["duration"]
-                )
+                # Prefer Whisper alignment when audio is available
+                if audio_path:
+                    try:
+                        aligned_lyrics, match_ratio = self.lyrics_aligner.align_lyrics_with_whisper(
+                            lyric_objects,
+                            audio_path,
+                            metadata["duration"],
+                            language=language
+                        )
+                    except Exception as e:
+                        logger.warning("Whisper alignment failed (%s). Falling back to beats.", e)
+                        aligned_lyrics = self.lyrics_aligner.align_lyrics_to_beats(
+                            lyric_objects,
+                            beats,
+                            metadata["duration"]
+                        )
+                else:
+                    aligned_lyrics = self.lyrics_aligner.align_lyrics_to_beats(
+                        lyric_objects,
+                        beats,
+                        metadata["duration"]
+                    )
                 lyrics = aligned_lyrics
 
             # Calculate alignment quality
-            alignment_quality = self.lyrics_aligner.calculate_alignment_quality(
-                lyrics,
-                beats,
-                metadata["duration"]
-            )
+            if match_ratio is not None:
+                alignment_quality = self.lyrics_aligner.calculate_alignment_quality_from_match_ratio(
+                    match_ratio
+                )
+            else:
+                alignment_quality = self.lyrics_aligner.calculate_alignment_quality(
+                    lyrics,
+                    beats,
+                    metadata["duration"]
+                )
 
             # Calculate pitch coverage
             if pitch_data:

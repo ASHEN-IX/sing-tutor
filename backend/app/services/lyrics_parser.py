@@ -79,24 +79,24 @@ class LyricsParser:
         for line in lines:
             line = line.strip()
 
-            # Parse metadata
-            if line.startswith('[') and ':' in line:
-                match = re.match(r'\[(\w+):([^\]]+)\]', line)
+            # Parse metadata [key:value]
+            if line.startswith('[') and ':' in line and ']' in line:
+                match = re.match(r'\[([a-zA-Z]+):([^\]]+)\]', line)
                 if match:
                     key, value = match.groups()
                     metadata[key] = value
                     continue
 
-            # Parse lyric lines with timestamps
-            # Format: [HH:MM:SS.ms]Lyrics or [MM:SS.ms]Lyrics
-            lyric_match = re.match(r'\[\d{1,2}:\d{2}(?:\.\d+)?\](.+)', line)
-            if lyric_match:
-                lyric_text = lyric_match.group(1).strip()
-                if lyric_text:
-                    lyric_lines.append(lyric_text)
+            # Parse lyric lines with timestamps.
+            # Be permissive: if line starts with [timestamp] capture remainder after the closing bracket
+            if line.startswith('[') and ']' in line:
+                # Remove the leading bracketed timestamp or tag and keep the rest
+                content = re.sub(r'^\[[^\]]+\]', '', line).strip()
+                if content:
+                    lyric_lines.append(content)
                 continue
 
-            # If line doesn't match LRC pattern, treat as plain lyric
+            # If line doesn't start with bracketed content, treat as plain lyric
             if line and not line.startswith('['):
                 lyric_lines.append(line)
 

@@ -16,6 +16,7 @@ from config import (
     CORS_METHODS,
     CORS_HEADERS,
 )
+from app.db.database import db_manager
 
 app = FastAPI(
     title=API_TITLE,
@@ -24,6 +25,15 @@ app = FastAPI(
 )
 
 logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def startup_db_client():
+    db_manager.connect()
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    db_manager.disconnect()
+
 
 # Configure CORS
 app.add_middleware(

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { PitchAnalysisResponse } from '@/types/pitch';
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 export const analysisService = {
   async analyzePitch(audioBlob: Blob): Promise<PitchAnalysisResponse> {

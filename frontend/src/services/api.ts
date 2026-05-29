@@ -5,7 +5,8 @@ import {
   AnalysisResult,
 } from '@/types/api';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 class ApiService {
   private client: AxiosInstance;
@@ -21,18 +22,18 @@ class ApiService {
 
   // Songs endpoints
   async getSongs(): Promise<SongMetadata[]> {
-    const response = await this.client.get<SongMetadata[]>('/songs');
+    const response = await this.client.get<SongMetadata[]>('/api/songs');
     return response.data;
   }
 
   async getSong(songId: string): Promise<SongMetadata> {
-    const response = await this.client.get<SongMetadata>(`/songs/${songId}`);
+    const response = await this.client.get<SongMetadata>(`/api/songs/${songId}`);
     return response.data;
   }
 
   async getReferencePitchData(songId: string): Promise<ReferenceData> {
     const response = await this.client.get<ReferenceData>(
-      `/songs/${songId}/reference`
+      `/api/songs/${songId}/reference-pitch`
     );
     return response.data;
   }
@@ -43,7 +44,7 @@ class ApiService {
     recordingId: string
   ): Promise<AnalysisResult> {
     const response = await this.client.post<AnalysisResult>(
-      `/recordings/${songId}/analyze`,
+      `/api/recordings/${songId}/analyze`,
       { recording_id: recordingId }
     );
     return response.data;

@@ -163,10 +163,24 @@ class TestMetadataExtractor:
         """Test extracting all metadata."""
         y, sr = sample_audio
         extractor = MetadataExtractor(sr=sr)
-        metadata = extractor.extract_all_metadata
-        assert "duration" in metadata
-        assert "bpm" in metadata
-        assert "key" in metadata
+        # Write temporary WAV file and call extract_all_metadata with the file path
+        import soundfile as sf
+        import tempfile
+        tmpf = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        tmp_path = tmpf.name
+        tmpf.close()
+        try:
+            sf.write(tmp_path, y, sr)
+            metadata = extractor.extract_all_metadata(tmp_path)
+            assert "duration" in metadata
+            assert "bpm" in metadata
+            assert "key" in metadata
+        finally:
+            try:
+                import os
+                os.remove(tmp_path)
+            except Exception:
+                pass
 
 
 class TestBeatDetector:

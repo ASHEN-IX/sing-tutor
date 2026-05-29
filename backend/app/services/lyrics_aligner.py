@@ -1,18 +1,25 @@
 """
-Lyrics alignment service - aligns word timings to beats.
+Lyrics alignment service - aligns word timings to beats or audio.
 
-Uses beat positions and linear interpolation to assign approximate timestamps to words.
+Uses beat positions and linear interpolation to assign approximate timestamps to words,
+or Whisper-based word timestamps when available.
 """
 
-import numpy as np
 import logging
-from typing import List
+import re
+import unicodedata
+from typing import List, Optional, Tuple
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
 class LyricsAligner:
     """Aligns lyrics words to beat positions and generates timestamps."""
+
+    _whisper_model = None
+    _whisper_model_name: Optional[str] = None
 
     def align_lyrics_to_beats(
         self,
@@ -66,7 +73,12 @@ class LyricsAligner:
             if beat_idx == 0 and beats:
                 # Before first beat
                 start = 0.0
-                end = beats[0]
+                # If the first detected beat is at time 0.0 (common), use the next beat as the end
+                if n_beats > 1 and beats[0] == 0.0:
+                    end = beats[1]
+                else:
+                    # If beat time is >0, use it; otherwise fallback to small interval
+                    end = beats[0] if beats[0] > 0.0 else min(duration, 0.5)
             elif beat_idx > 0 and beat_idx < n_beats:
                 # Between beats
                 prev_beat = beats[beat_idx - 1]
@@ -97,6 +109,87 @@ class LyricsAligner:
 
         logger.debug(f"Aligned {len(aligned)} words")
         return aligned
+
+    def align_lyrics_with_whisper(
+        self,
+        lyric_objects: List[dict],
+        audio_path: str,
+        duration: float,
+        language: Optional[str] = None,
+        model_name: str = "base"
+    ) -> Tuple[List[dict], float]:
+        """
+        Align lyrics to Whisper word timestamps.
+
+        Returns:
+            Tuple of (aligned lyrics, match ratio)
+        """
+        if not lyric_objects:
+            return [], 0.0
+
+        transcript_words = self._transcribe_words(
+            audio_path,
+            language=language,
+            model_name=model_name
+        )
+
+        if not transcript_words:
+            raise RuntimeError("Whisper produced no word timestamps")
+
+        normalized_transcript = [self._normalize_word(w["word"]) for w in transcript_words]
+        normalized_lyrics = [self._normalize_word(w["word"]) for w in lyric_objects]
+
+        matches = [None] * len(lyric_objects)
+        transcript_idx = 0
+        for lyric_idx, lyric_word in enumerate(normalized_lyrics):
+            if not lyric_word:
+                continue
+            while transcript_idx < len(normalized_transcript):
+                transcript_word = normalized_transcript[transcript_idx]
+                if lyric_word == transcript_word:
+                    matches[lyric_idx] = transcript_words[transcript_idx]
+                    transcript_idx += 1
+                    break
+                transcript_idx += 1
+
+        match_count = len([m for m in matches if m is not None])
+        match_ratio = match_count / max(len(lyric_objects), 1)
+
+        if match_ratio < 0.2:
+            raise RuntimeError(
+                f"Whisper match ratio too low ({match_ratio:.2f}); falling back"
+            )
+
+        aligned = []
+        for i, word_obj in enumerate(lyric_objects):
+            if matches[i] is not None:
+                start = float(matches[i]["start"])
+                end = float(matches[i]["end"])
+            else:
+                start = None
+                end = None
+
+            aligned.append({
+                "index": word_obj["index"],
+                "word": word_obj["word"],
+                "start": start,
+                "end": end,
+            })
+
+        aligned = self._fill_missing_word_times(aligned, duration)
+        logger.info(
+            "Aligned %s/%s words using Whisper (match ratio %.2f)",
+            match_count,
+            len(lyric_objects),
+            match_ratio,
+        )
+        return aligned, float(match_ratio)
+
+    def calculate_alignment_quality_from_match_ratio(self, match_ratio: float) -> float:
+        """Convert a Whisper match ratio to a 0-1 quality score."""
+        if match_ratio <= 0:
+            return 0.0
+        return float(min(1.0, max(0.0, match_ratio)))
 
     def distribute_words_evenly(
         self,
@@ -196,3 +289,100 @@ class LyricsAligner:
         quality = (ratio_score + uniformity_score) / 2
         logger.debug(f"Alignment quality: {quality:.2f} (ratio={ratio:.2f}, uniformity={uniformity_score:.2f})")
         return float(quality)
+
+    def _fill_missing_word_times(self, aligned: List[dict], duration: float) -> List[dict]:
+        """Fill missing word timings by interpolating between known timestamps."""
+        if not aligned:
+            return aligned
+
+        # Fill gaps before the first known word
+        first_known = next((i for i, w in enumerate(aligned) if w["start"] is not None), None)
+        if first_known is not None and first_known > 0:
+            end_time = aligned[first_known]["start"]
+            step = end_time / first_known if end_time > 0 else 0.2
+            for i in range(first_known):
+                aligned[i]["start"] = float(step * i)
+                aligned[i]["end"] = float(step * (i + 1))
+
+        # Fill gaps between known words
+        prev_idx = None
+        for i, word in enumerate(aligned):
+            if word["start"] is None:
+                continue
+            if prev_idx is not None and i - prev_idx > 1:
+                gap = i - prev_idx - 1
+                start_time = aligned[prev_idx]["end"]
+                end_time = word["start"]
+                step = (end_time - start_time) / (gap + 1) if end_time > start_time else 0.2
+                for g in range(gap):
+                    idx = prev_idx + 1 + g
+                    aligned[idx]["start"] = float(start_time + step * g)
+                    aligned[idx]["end"] = float(start_time + step * (g + 1))
+            prev_idx = i
+
+        # Fill gaps after the last known word
+        last_known = next((i for i in range(len(aligned) - 1, -1, -1) if aligned[i]["start"] is not None), None)
+        if last_known is not None and last_known < len(aligned) - 1:
+            gap = len(aligned) - 1 - last_known
+            start_time = aligned[last_known]["end"]
+            end_time = duration if duration > start_time else start_time + gap * 0.2
+            step = (end_time - start_time) / (gap + 1) if end_time > start_time else 0.2
+            for g in range(gap):
+                idx = last_known + 1 + g
+                aligned[idx]["start"] = float(start_time + step * g)
+                aligned[idx]["end"] = float(start_time + step * (g + 1))
+
+        # Ensure all words have a minimal duration
+        for word in aligned:
+            if word["start"] is None or word["end"] is None:
+                word["start"] = 0.0
+                word["end"] = min(0.2, duration)
+            if word["end"] < word["start"]:
+                word["end"] = word["start"] + 0.1
+
+        return aligned
+
+    def _transcribe_words(
+        self,
+        audio_path: str,
+        language: Optional[str] = None,
+        model_name: str = "base"
+    ) -> List[dict]:
+        """Run Whisper transcription and extract word-level timestamps."""
+        try:
+            import whisper
+        except ImportError as exc:
+            raise RuntimeError("Whisper is not installed") from exc
+
+        model = self._load_whisper_model(whisper, model_name)
+        result = model.transcribe(
+            audio_path,
+            language=language,
+            word_timestamps=True,
+            fp16=False,
+        )
+
+        words = []
+        for segment in result.get("segments", []):
+            for word in segment.get("words", []):
+                if "start" in word and "end" in word:
+                    words.append(word)
+
+        return words
+
+    def _load_whisper_model(self, whisper_module, model_name: str):
+        """Load and cache Whisper model."""
+        if self._whisper_model is None or self._whisper_model_name != model_name:
+            logger.info("Loading Whisper model: %s", model_name)
+            self._whisper_model = whisper_module.load_model(model_name)
+            self._whisper_model_name = model_name
+        return self._whisper_model
+
+    def _normalize_word(self, word: str) -> str:
+        """Normalize words for matching across lyrics and transcript."""
+        if not word:
+            return ""
+        text = word.strip().lower()
+        text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+        text = re.sub(r"[^a-z0-9']+", "", text)
+        return text

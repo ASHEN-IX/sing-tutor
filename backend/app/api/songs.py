@@ -19,6 +19,7 @@ from app.schemas.song_reference import (
     SongPreviewResponse,
     ErrorResponse,
 )
+from app.db.database import get_database
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,6 @@ router = APIRouter(prefix="/api/songs", tags=["songs"])
 # Initialize services (in production, use dependency injection)
 storage_service = SongStorageService(base_path="backend/songs")
 reference_builder = ReferenceBuilder(storage_service=storage_service)
-
-# In-memory processing status (in production, use database)
-processing_status = {}
 
 
 @router.post(
@@ -109,13 +107,15 @@ async def upload_song(
         storage_service.save_lyrics_file(song_id, lyrics_text, filename="lyrics.txt")
 
         # Store metadata for processing
-        processing_status[song_id] = {
+        db = await get_database()
+        await db.songs.insert_one({
+            "_id": song_id,
             "status": "uploaded",
             "title": title,
             "artist": artist,
             "language": language,
             "difficulty": difficulty,
-        }
+        })
 
         logger.info(f"Upload successful for {song_id}: {title} - {artist}")
 
@@ -169,16 +169,21 @@ async def process_song(
         curl -X POST http://localhost:8000/api/songs/550e8400-e29b-41d4-a716-446655440000/process
     """
     try:
+        db = await get_database()
+        song_doc = await db.songs.find_one({"_id": song_id})
+
         # Check if song exists
-        if song_id not in processing_status:
+        if not song_doc:
             raise HTTPException(status_code=404, detail=f"Song not found: {song_id}")
 
         if not storage_service.song_exists(song_id):
             raise HTTPException(status_code=404, detail=f"Song not found: {song_id}")
 
         # Update status
-        processing_status[song_id]["status"] = "processing"
-        processing_status[song_id]["progress"] = 0.0
+        await db.songs.update_one(
+            {"_id": song_id},
+            {"$set": {"status": "processing", "progress": 0.0}}
+        )
 
         logger.info(f"Starting processing for {song_id}")
 
@@ -199,8 +204,11 @@ async def process_song(
         raise
     except Exception as e:
         logger.error(f"Processing failed for {song_id}: {e}")
-        processing_status[song_id]["status"] = "failed"
-        processing_status[song_id]["error"] = str(e)
+        db = await get_database()
+        await db.songs.update_one(
+            {"_id": song_id},
+            {"$set": {"status": "failed", "error": str(e)}}
+        )
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 
@@ -212,14 +220,17 @@ async def _process_song_background(song_id: str) -> None:
     """
     try:
         logger.info(f"Background processing started for {song_id}")
-
-        # Get song metadata
-        song_info = processing_status.get(song_id, {})
+        
+        db = await get_database()
+        song_info = await db.songs.find_one({"_id": song_id}) or {}
         audio_path = str(storage_service.get_file_path(song_id, "original.mp3"))
         lyrics_text = storage_service.load_lyrics_file(song_id, "lyrics.txt")
 
+        import asyncio
+        
         # Build reference
-        reference = reference_builder.build_reference(
+        reference = await asyncio.to_thread(
+            reference_builder.build_reference,
             song_id=song_id,
             title=song_info.get("title", "Unknown"),
             artist=song_info.get("artist", "Unknown"),
@@ -230,18 +241,23 @@ async def _process_song_background(song_id: str) -> None:
         )
 
         # Save reference
-        reference_builder.save_reference(reference)
+        await asyncio.to_thread(reference_builder.save_reference, reference)
 
         # Update status
-        processing_status[song_id]["status"] = "completed"
-        processing_status[song_id]["progress"] = 1.0
+        await db.songs.update_one(
+            {"_id": song_id},
+            {"$set": {"status": "completed", "progress": 1.0}}
+        )
 
         logger.info(f"Background processing completed for {song_id}")
 
     except Exception as e:
         logger.error(f"Background processing failed for {song_id}: {e}")
-        processing_status[song_id]["status"] = "failed"
-        processing_status[song_id]["error"] = str(e)
+        db = await get_database()
+        await db.songs.update_one(
+            {"_id": song_id},
+            {"$set": {"status": "failed", "error": str(e)}}
+        )
 
 
 @router.get(
@@ -263,7 +279,8 @@ async def get_processing_status(song_id: str) -> ProcessingStatus:
         curl http://localhost:8000/api/songs/550e8400-e29b-41d4-a716-446655440000/status
     """
     try:
-        status_info = processing_status.get(song_id)
+        db = await get_database()
+        status_info = await db.songs.find_one({"_id": song_id})
 
         if not status_info:
             # Try to check if completed reference exists
@@ -400,8 +417,8 @@ async def delete_song(song_id: str) -> None:
         storage_service.delete_song(song_id)
 
         # Clean up processing status
-        if song_id in processing_status:
-            del processing_status[song_id]
+        db = await get_database()
+        await db.songs.delete_one({"_id": song_id})
 
         logger.info(f"Deleted song: {song_id}")
 

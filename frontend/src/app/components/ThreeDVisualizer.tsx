@@ -95,12 +95,12 @@ export function ThreeDVisualizer({
         p.y = Math.sin(dist * 0.04 - time * 2) * 20 * (isPlaying ? 1.5 : 0.4);
 
         // Apply Y rotation
-        let x1 = p.x * cosY - p.z * sinY;
-        let z1 = p.x * sinY + p.z * cosY;
+        const x1 = p.x * cosY - p.z * sinY;
+        const z1 = p.x * sinY + p.z * cosY;
 
         // Apply X rotation
-        let y2 = p.y * cosX - z1 * sinX;
-        let z2 = p.y * sinX + z1 * cosX;
+        const y2 = p.y * cosX - z1 * sinX;
+        const z2 = p.y * sinX + z1 * cosX;
 
         // Perspective Projection
         const zoom = 1.3;
@@ -113,7 +113,6 @@ export function ThreeDVisualizer({
           const radius = Math.max(1, scale * 3.5);
 
           // Color gradient based on particle depth (z2)
-          const ratio = (z2 + 150) / 300;
           ctx.beginPath();
           ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
 
@@ -140,10 +139,10 @@ export function ThreeDVisualizer({
           const dist = Math.sqrt(p.x * p.x + p.z * p.z);
           const y = Math.sin(dist * 0.04 - time * 2) * 20 * (isPlaying ? 1.5 : 0.4);
 
-          let x1 = p.x * cosY - p.z * sinY;
-          let z1 = p.x * sinY + p.z * cosY;
-          let y2 = y * cosX - z1 * sinX;
-          let z2 = y * sinX + z1 * cosX;
+          const x1 = p.x * cosY - p.z * sinY;
+          const z1 = p.x * sinY + p.z * cosY;
+          const y2 = y * cosX - z1 * sinX;
+          const z2 = y * sinX + z1 * cosX;
 
           const zoom = 1.3;
           const screenX = (x1 * f) / (z2 + 350) * zoom + width / 2;

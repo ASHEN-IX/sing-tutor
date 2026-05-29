@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Trophy, Zap, Flame, Star, Lock, ChevronRight } from "lucide-react";
+import { Trophy, Zap, Flame, Star, Lock } from "lucide-react";
 
 interface GamificationPageProps {
   onNavigate: (page: string) => void;
@@ -18,15 +18,6 @@ const dailyQuests = [
   { icon: "🎵", title: "Sing 2 songs today", xp: 50, progress: 1, total: 2 },
   { icon: "⭐", title: "Score 85%+ once", xp: 75, progress: 0, total: 1 },
   { icon: "🔥", title: "Practice for 15 minutes", xp: 40, progress: 8, total: 15 },
-];
-
-const levels = [
-  { level: 1, name: "Vocal Rookie", minXp: 0 },
-  { level: 5, name: "Melody Seeker", minXp: 500 },
-  { level: 10, name: "Pitch Pioneer", minXp: 1500 },
-  { level: 14, name: "Rising Star", minXp: 2500 },
-  { level: 20, name: "Vocal Master", minXp: 5000 },
-  { level: 30, name: "Legend", minXp: 12000 },
 ];
 
 export function GamificationPage({ onNavigate }: GamificationPageProps) {

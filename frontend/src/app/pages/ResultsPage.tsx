@@ -2,10 +2,12 @@ import { motion } from "motion/react";
 import { Trophy, RotateCcw, ChevronRight, Star, Zap, Target, Activity } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { MelodyCurve } from "../components/MelodyCurve";
+import { PitchAnalysisResponse } from "../../types/pitch";
 
 interface ResultsPageProps {
   onNavigate: (page: string, songId?: string) => void;
   songId?: string | null;
+  analysis?: PitchAnalysisResponse | null;
 }
 
 const userPitch = [
@@ -37,8 +39,21 @@ const achievements = [
   { icon: "⬆️", title: "Personal Best", desc: "Highest score on this song" },
 ];
 
-export function ResultsPage({ onNavigate }: ResultsPageProps) {
-  const overallScore = 87;
+function frequencyToMidi(frequency: number) {
+  return 69 + 12 * Math.log2(frequency / 440);
+}
+
+export function ResultsPage({ onNavigate, songId, analysis }: ResultsPageProps) {
+  const confidenceScore = analysis?.pitch_data.length
+    ? Math.round(
+        (analysis.pitch_data.reduce((sum, point) => sum + point.confidence, 0) / analysis.pitch_data.length) * 100
+      )
+    : 87;
+  const overallScore = Math.min(100, Math.max(0, confidenceScore));
+  const analyzedPitch = analysis?.pitch_data
+    .map((point) => frequencyToMidi(point.frequency))
+    .filter((value) => Number.isFinite(value));
+  const comparisonPitch = analyzedPitch?.length ? analyzedPitch.slice(0, 80) : userPitch;
 
   return (
     <div className="min-h-screen pt-20 pb-12 px-6" style={{ background: "#0B0F1A" }}>
@@ -70,10 +85,10 @@ export function ResultsPage({ onNavigate }: ResultsPageProps) {
               letterSpacing: "-0.02em",
             }}
           >
-            Blinding Lights — Results
+            Performance Results
           </h1>
           <p className="text-sm mt-1" style={{ color: "#7B7FA8" }}>
-            The Weeknd • May 28, 2026
+            {analysis ? `${analysis.num_points} pitch points • ${analysis.duration.toFixed(1)}s analyzed` : "Demo performance summary"}
           </p>
         </motion.div>
 
@@ -190,7 +205,7 @@ export function ResultsPage({ onNavigate }: ResultsPageProps) {
             <p className="text-sm font-bold mb-4" style={{ color: "#E8E0FF", fontFamily: "'Space Grotesk', sans-serif" }}>
               Melody Comparison
             </p>
-            <MelodyCurve height={130} showUserOverlay userPitch={userPitch} />
+            <MelodyCurve height={130} showUserOverlay userPitch={comparisonPitch} />
             <div className="flex items-center gap-6 mt-3">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-0.5 rounded" style={{ background: "#9D5CFF" }} />
@@ -258,7 +273,7 @@ export function ResultsPage({ onNavigate }: ResultsPageProps) {
                   fontFamily: "'Space Grotesk', sans-serif",
                   fontSize: "12px",
                 }}
-                formatter={(v: number) => [`${v}%`, "Score"]}
+                formatter={(value) => [`${value}%`, "Score"]}
               />
               <Area type="monotone" dataKey="score" stroke="#FF3CAC" strokeWidth={2} fill="url(#segGrad)" />
             </AreaChart>
@@ -347,7 +362,7 @@ export function ResultsPage({ onNavigate }: ResultsPageProps) {
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => onNavigate("recording")}
+            onClick={() => onNavigate("recording", songId || undefined)}
             className="flex items-center gap-2 px-6 py-3.5 rounded-xl font-semibold"
             style={{
               background: "rgba(255,255,255,0.06)",

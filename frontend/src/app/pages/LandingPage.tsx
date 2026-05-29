@@ -1,6 +1,5 @@
 import { motion } from "motion/react";
 import { Mic2, Zap, BarChart3, Trophy, Star, ChevronRight, Play } from "lucide-react";
-import { MelodyCurve } from "../components/MelodyCurve";
 import { ThreeDVisualizer } from "../components/ThreeDVisualizer";
 
 interface LandingPageProps {

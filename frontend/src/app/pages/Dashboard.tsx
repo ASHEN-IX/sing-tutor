@@ -384,7 +384,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                         fontFamily: "'Space Grotesk', sans-serif",
                         fontSize: "12px",
                       }}
-                      formatter={(v: number) => [`${v}%`, "Score"]}
+                      formatter={(value) => [`${value}%`, "Score"]}
                     />
                     <Area
                       type="monotone"

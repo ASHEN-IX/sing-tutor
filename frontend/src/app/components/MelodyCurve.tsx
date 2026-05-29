@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
 
 interface MelodyCurveProps {
   isPlaying?: boolean;
+  referencePitch?: number[];
   userPitch?: number[];
   height?: number;
   showUserOverlay?: boolean;
@@ -32,6 +32,7 @@ function buildPath(ys: number[], width: number) {
 
 export function MelodyCurve({
   isPlaying = false,
+  referencePitch,
   userPitch,
   height = 140,
   showUserOverlay = false,
@@ -45,7 +46,6 @@ export function MelodyCurve({
   useEffect(() => {
     if (!isPlaying) {
       cancelAnimationFrame(rafRef.current);
-      setPlayhead(0);
       return;
     }
     startRef.current = performance.now();
@@ -59,14 +59,16 @@ export function MelodyCurve({
   }, [isPlaying]);
 
   const width = 800;
-  const refYs = normalize(referencePitches, 35, 80, height);
+  const pitches = referencePitch?.length ? referencePitch : referencePitches;
+  const refYs = normalize(pitches, 35, 80, height);
   const refPath = buildPath(refYs, width);
 
   const userYs = userPitch ? normalize(userPitch, 35, 80, height) : [];
-  const userPath = userYs.length > 1 ? buildPath(userYs, (width * userYs.length) / referencePitches.length) : "";
+  const userPath = userYs.length > 1 ? buildPath(userYs, (width * userYs.length) / pitches.length) : "";
 
-  const playheadX = playhead * width;
-  const playheadIdx = Math.floor(playhead * (refYs.length - 1));
+  const displayedPlayhead = isPlaying ? playhead : 0;
+  const playheadX = displayedPlayhead * width;
+  const playheadIdx = Math.floor(displayedPlayhead * (refYs.length - 1));
   const playheadY = refYs[playheadIdx] ?? height / 2;
 
   return (

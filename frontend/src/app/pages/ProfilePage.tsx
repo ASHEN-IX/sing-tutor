@@ -208,7 +208,7 @@ export function ProfilePage({ onNavigate, onLogout }: ProfilePageProps) {
                       fontFamily: "'Space Grotesk', sans-serif",
                       fontSize: "12px",
                     }}
-                    formatter={(v: number) => [`${v}%`, "Score"]}
+                    formatter={(value) => [`${value}%`, "Score"]}
                   />
                   <Area type="monotone" dataKey="score" stroke="#9D5CFF" strokeWidth={2} fill="url(#perfGrad)" />
                 </AreaChart>
@@ -239,7 +239,7 @@ export function ProfilePage({ onNavigate, onLogout }: ProfilePageProps) {
                       fontFamily: "'Space Grotesk', sans-serif",
                       fontSize: "12px",
                     }}
-                    formatter={(v: number) => [v, "Songs"]}
+                    formatter={(value) => [value ?? 0, "Songs"]}
                   />
                   <Bar dataKey="songs" radius={[4, 4, 0, 0]} fill="url(#barGrad)">
                     <defs>

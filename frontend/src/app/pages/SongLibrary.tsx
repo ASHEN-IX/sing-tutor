@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Search, SlidersHorizontal, Plus, Loader2 } from "lucide-react";
 import { SongCard, Song } from "../components/SongCard";
-import axios from "axios";
+import { apiService } from "../../services/api";
+import { SongMetadata } from "../../types/api";
 
 interface SongLibraryProps {
   onNavigate: (page: string, songId?: string) => void;
@@ -102,12 +103,30 @@ const fallbackSongs: Song[] = [
 const difficulties = ["All", "Beginner", "Intermediate", "Advanced"];
 const genres = ["All", "Pop", "Synth", "Rock", "R&B", "Indie", "Classic"];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function toTitleCase(value: string): Song["difficulty"] {
+  if (value === "advanced") return "Advanced";
+  if (value === "intermediate") return "Intermediate";
+  return "Beginner";
+}
+
+function mapApiSong(song: SongMetadata, index: number): Song {
+  return {
+    id: song.id,
+    title: song.title,
+    artist: song.artist,
+    difficulty: toTitleCase(song.difficulty),
+    duration: formatDuration(song.duration || 0),
+    genre: song.key ? `Key ${song.key}` : "Practice",
+    cover: coverImages[index % coverImages.length],
+    xp: Math.max(50, Math.round((song.duration || 120) * 0.8)),
+    rating: Number((4.5 + (index % 5) * 0.08).toFixed(1)),
+  };
 }
 
 const coverImages = [
@@ -126,28 +145,14 @@ export function SongLibrary({ onNavigate }: SongLibraryProps) {
   const [songs, setSongs] = useState<Song[]>(fallbackSongs);
   const [loading, setLoading] = useState(true);
 
-  // Fetch real songs from the API and merge with fallback
+  // Same source as the old frontend: load completed songs from the backend.
   useEffect(() => {
     async function fetchSongs() {
       try {
-        const res = await axios.get(`${API_BASE}/api/songs`);
-        const apiSongs: Song[] = (res.data || []).map((s: any, i: number) => ({
-          id: s.id,
-          title: s.title,
-          artist: s.artist,
-          difficulty: (s.difficulty?.charAt(0).toUpperCase() + s.difficulty?.slice(1)) as Song["difficulty"] || "Beginner",
-          duration: formatDuration(s.duration || 0),
-          genre: "Pop",
-          cover: coverImages[i % coverImages.length],
-          xp: Math.round((s.duration || 120) * 0.8),
-          rating: 4.5 + Math.random() * 0.5,
-        }));
-
-        // Merge: API songs first, then fallback display songs
-        const merged = [...apiSongs, ...fallbackSongs];
-        setSongs(merged);
+        const apiSongs = await apiService.getSongs();
+        setSongs(apiSongs.length ? apiSongs.map(mapApiSong) : []);
       } catch {
-        // API not available — use fallback
+        // Keep the Figma library usable when the backend is offline.
         setSongs(fallbackSongs);
       } finally {
         setLoading(false);

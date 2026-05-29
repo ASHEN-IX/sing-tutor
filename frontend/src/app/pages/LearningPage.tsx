@@ -14,6 +14,9 @@ import {
   Minus,
 } from "lucide-react";
 import { MelodyCurve } from "../components/MelodyCurve";
+import { API_BASE_URL } from "../../services/api";
+import { getReference } from "../../services/songService";
+import { SongReference } from "../../types/songReference";
 
 interface LearningPageProps {
   onNavigate: (page: string, songId?: string) => void;
@@ -40,24 +43,90 @@ const hints = [
   { icon: ArrowUp, text: "Gentle rise on the vowel", color: "#3CFFA0" },
 ];
 
+function frequencyToMidi(frequency: number) {
+  return 69 + 12 * Math.log2(frequency / 440);
+}
+
+function lyricLines(reference: SongReference | null) {
+  if (!reference?.lyrics.length) return lyrics;
+
+  const lines: { text: string; time: number }[] = [];
+  const wordsPerLine = 6;
+
+  for (let i = 0; i < reference.lyrics.length; i += wordsPerLine) {
+    const chunk = reference.lyrics.slice(i, i + wordsPerLine);
+    lines.push({
+      text: chunk.map((item) => item.word).join(" "),
+      time: chunk[0]?.start ?? 0,
+    });
+  }
+
+  return lines.length ? lines : lyrics;
+}
+
 export function LearningPage({ onNavigate, songId }: LearningPageProps) {
+  const [reference, setReference] = useState<SongReference | null>(null);
+  const [loading, setLoading] = useState(Boolean(songId));
+  const [error, setError] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [volume, setVolume] = useState(80);
   const [hintIdx, setHintIdx] = useState(0);
   const rafRef = useRef<number>(0);
   const startRef = useRef<number>(0);
-  const totalDuration = 40;
+  const elapsedRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const totalDuration = reference?.duration || 40;
+
+  useEffect(() => {
+    elapsedRef.current = elapsed;
+  }, [elapsed]);
+
+  useEffect(() => {
+    if (!songId) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const currentSongId = songId;
+
+    async function loadReference() {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await getReference(currentSongId);
+        if (!cancelled) {
+          setReference(data);
+          setElapsed(0);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load song reference");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadReference();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [songId]);
 
   useEffect(() => {
     if (!isPlaying) {
       cancelAnimationFrame(rafRef.current);
+      audioRef.current?.pause();
       return;
     }
-    const offset = elapsed;
+    const offset = elapsedRef.current;
     startRef.current = performance.now() - offset * 1000;
+    void audioRef.current?.play();
     const tick = (now: number) => {
-      const t = (now - startRef.current) / 1000;
+      const t = audioRef.current?.currentTime ?? (now - startRef.current) / 1000;
       setElapsed(Math.min(t, totalDuration));
       if (t < totalDuration) {
         rafRef.current = requestAnimationFrame(tick);
@@ -67,7 +136,7 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [isPlaying]);
+  }, [isPlaying, totalDuration]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -77,16 +146,36 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
     return () => clearInterval(interval);
   }, [isPlaying]);
 
-  const currentLyricIdx = lyrics.reduce((acc, l, i) => (elapsed >= l.time ? i : acc), 0);
+  const displayLyrics = lyricLines(reference);
+  const currentLyricIdx = displayLyrics.reduce((acc, l, i) => (elapsed >= l.time ? i : acc), 0);
   const progress = elapsed / totalDuration;
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
   const hint = hints[hintIdx];
   const HintIcon = hint.icon;
+  const referencePitch = reference?.pitch_data
+    .map((point) => point.midi || frequencyToMidi(point.frequency))
+    .filter((value) => Number.isFinite(value));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center" style={{ background: "#0B0F1A" }}>
+        <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[#9D5CFF] animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-16 flex flex-col" style={{ background: "#0B0F1A" }}>
+      {songId && (
+        <audio
+          ref={audioRef}
+          src={`${API_BASE_URL}/songs/${songId}/original.mp3`}
+          onEnded={() => setIsPlaying(false)}
+          onTimeUpdate={(event) => setElapsed(event.currentTarget.currentTime)}
+        />
+      )}
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none">
         <div
@@ -116,9 +205,11 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
                 className="font-bold text-sm"
                 style={{ color: "#E8E0FF", fontFamily: "'Space Grotesk', sans-serif" }}
               >
-                Blinding Lights
+                {reference?.title || "Blinding Lights"}
               </p>
-              <p className="text-xs" style={{ color: "#7B7FA8" }}>The Weeknd • Intermediate</p>
+              <p className="text-xs" style={{ color: "#7B7FA8" }}>
+                {reference ? `${reference.artist} • ${reference.difficulty}` : "The Weeknd • Intermediate"}
+              </p>
             </div>
             <div
               className="ml-auto px-3 py-1 rounded-full text-xs font-semibold"
@@ -145,7 +236,9 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const pct = (e.clientX - rect.left) / rect.width;
-              setElapsed(pct * totalDuration);
+              const nextElapsed = pct * totalDuration;
+              setElapsed(nextElapsed);
+              if (audioRef.current) audioRef.current.currentTime = nextElapsed;
             }}
           >
             <div
@@ -203,10 +296,19 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
               ))}
             </div>
             <div className="flex-1">
-              <MelodyCurve isPlaying={isPlaying} height={180} />
+              <MelodyCurve isPlaying={isPlaying} referencePitch={referencePitch} height={180} />
             </div>
           </div>
         </div>
+
+        {error && (
+          <div
+            className="rounded-2xl p-4 text-sm"
+            style={{ background: "rgba(255,60,172,0.1)", border: "1px solid rgba(255,60,172,0.3)", color: "#FF8ACD" }}
+          >
+            {error}
+          </div>
+        )}
 
         {/* Lyrics */}
         <div
@@ -232,11 +334,11 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              {lyrics[currentLyricIdx]?.text}
+              {displayLyrics[currentLyricIdx]?.text}
             </motion.p>
           </AnimatePresence>
           <p className="text-sm" style={{ color: "#7B7FA8", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            {lyrics[Math.min(currentLyricIdx + 1, lyrics.length - 1)]?.text}
+            {displayLyrics[Math.min(currentLyricIdx + 1, displayLyrics.length - 1)]?.text}
           </p>
         </div>
 
@@ -326,7 +428,7 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => onNavigate("recording")}
+            onClick={() => onNavigate("recording", songId || undefined)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
             style={{
               background: "rgba(255, 60, 172, 0.12)",

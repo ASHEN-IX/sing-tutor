@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Upload, Music, FileText, ChevronLeft, Check, Loader2, X, Sparkles } from "lucide-react";
-import { uploadSong, processSong, waitForProcessingCompletion } from "../../services/songService";
+import { handleSongServiceError, uploadSong, processSong, waitForProcessingCompletion } from "../../services/songService";
 
 interface UploadSongPageProps {
   onNavigate: (page: string, songId?: string) => void;
@@ -51,8 +51,8 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
 
       setProgress(100);
       setStep("done");
-    } catch (err: any) {
-      setError(err?.message || "Upload failed");
+    } catch (err) {
+      setError(handleSongServiceError(err));
       setStep("error");
     }
   }, [audioFile, lyricsFile, title, artist, language, difficulty]);

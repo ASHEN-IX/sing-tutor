@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Navbar } from "./components/Navbar";
 import { LandingPage } from "./pages/LandingPage";
 import { AuthPages } from "./pages/AuthPages";
@@ -12,6 +12,7 @@ import { ResultsPage } from "./pages/ResultsPage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { UploadSongPage } from "./pages/UploadSongPage";
+import { PitchAnalysisResponse } from "@/types/pitch";
 
 type Page =
   | "landing"
@@ -31,20 +32,7 @@ export default function Home() {
   const [page, setPage] = useState<Page>("landing");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeSongId, setActiveSongId] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  // Avoid SSR mismatch of Client APIs (like window size, audio context, etc.)
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B0F1A]">
-        <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[#9D5CFF] animate-spin" />
-      </div>
-    );
-  }
+  const [latestAnalysis, setLatestAnalysis] = useState<PitchAnalysisResponse | null>(null);
 
   const navigate = (p: string, songId?: string) => {
     setPage(p as Page);
@@ -84,8 +72,10 @@ export default function Home() {
       {page === "library" && <SongLibrary onNavigate={navigate} />}
       {page === "upload" && <UploadSongPage onNavigate={navigate} />}
       {page === "learning" && <LearningPage onNavigate={navigate} songId={activeSongId} />}
-      {page === "recording" && <RecordingPage onNavigate={navigate} songId={activeSongId} />}
-      {page === "results" && <ResultsPage onNavigate={navigate} songId={activeSongId} />}
+      {page === "recording" && (
+        <RecordingPage onNavigate={navigate} songId={activeSongId} onAnalysisComplete={setLatestAnalysis} />
+      )}
+      {page === "results" && <ResultsPage onNavigate={navigate} songId={activeSongId} analysis={latestAnalysis} />}
       {page === "gamification" && <GamificationPage onNavigate={navigate} />}
       {page === "profile" && <ProfilePage onNavigate={navigate} onLogout={handleLogout} />}
     </div>

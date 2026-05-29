@@ -1,19 +1,52 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Mic, Square, ChevronLeft, Waves } from "lucide-react";
+import { Mic, Square, ChevronLeft, Loader2 } from "lucide-react";
+import { usePitchAnalysis } from "../../hooks/usePitchAnalysis";
+import { apiService } from "../../services/api";
+import { SongMetadata } from "../../types/api";
+import { PitchAnalysisResponse } from "../../types/pitch";
 
 interface RecordingPageProps {
   onNavigate: (page: string, songId?: string) => void;
   songId?: string | null;
+  onAnalysisComplete: (analysis: PitchAnalysisResponse | null) => void;
 }
 
-export function RecordingPage({ onNavigate, songId }: RecordingPageProps) {
+export function RecordingPage({ onNavigate, songId, onAnalysisComplete }: RecordingPageProps) {
+  const [song, setSong] = useState<SongMetadata | null>(null);
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [waveValues, setWaveValues] = useState<number[]>(Array(40).fill(4));
   const [confidence, setConfidence] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
-  const waveRef = useRef<ReturnType<typeof setInterval>>();
+  const [recordingError, setRecordingError] = useState("");
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const waveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const { analysis, loading: analysisLoading, error: analysisError, analyzePitch, resetAnalysis } = usePitchAnalysis();
+
+  useEffect(() => {
+    if (!songId) return;
+
+    let cancelled = false;
+    const currentSongId = songId;
+
+    async function loadSong() {
+      try {
+        const data = await apiService.getSong(currentSongId);
+        if (!cancelled) setSong(data);
+      } catch {
+        if (!cancelled) setSong(null);
+      }
+    }
+
+    loadSong();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [songId]);
 
   useEffect(() => {
     if (recording) {
@@ -27,23 +60,71 @@ export function RecordingPage({ onNavigate, songId }: RecordingPageProps) {
         setConfidence(65 + Math.random() * 30);
       }, 120);
     } else {
-      clearInterval(intervalRef.current);
-      clearInterval(waveRef.current);
-      if (elapsed === 0) return;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (waveRef.current) clearInterval(waveRef.current);
       setWaveValues(Array(40).fill(4));
     }
     return () => {
-      clearInterval(intervalRef.current);
-      clearInterval(waveRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (waveRef.current) clearInterval(waveRef.current);
     };
   }, [recording]);
 
-  const handleStop = () => {
-    setRecording(false);
-    setTimeout(() => onNavigate("results"), 600);
+  const startRecording = async () => {
+    try {
+      resetAnalysis();
+      onAnalysisComplete(null);
+      setRecordingError("");
+      setElapsed(0);
+      chunksRef.current = [];
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunksRef.current.push(event.data);
+      };
+
+      recorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/wav" });
+        const result = await analyzePitch(blob);
+        onAnalysisComplete(result);
+        streamRef.current?.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        onNavigate("results", songId || undefined);
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+    } catch {
+      setRecording(false);
+      setRecordingError("Failed to start recording. Check microphone permissions.");
+    }
   };
 
+  const handleStop = () => {
+    setRecording(false);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const pageError = recordingError || analysisError;
+  const currentConfidence = recording ? confidence : analysis?.pitch_data[0]?.confidence ? analysis.pitch_data[0].confidence * 100 : 0;
 
   return (
     <div
@@ -86,12 +167,14 @@ export function RecordingPage({ onNavigate, songId }: RecordingPageProps) {
               letterSpacing: "-0.02em",
             }}
           >
-            {recording ? "Recording..." : "Ready to Sing?"}
+            {analysisLoading ? "Analyzing..." : recording ? "Recording..." : "Ready to Sing?"}
           </h1>
           <p className="mt-2 text-sm" style={{ color: "#7B7FA8" }}>
-            {recording
+            {analysisLoading
+              ? "Sending your recording to the pitch analysis API"
+              : recording
               ? "Sing along with the melody — we're analyzing your voice live"
-              : "Tap the mic and sing Blinding Lights"}
+              : `Tap the mic and sing ${song?.title || "your song"}`}
           </p>
         </div>
 
@@ -132,12 +215,12 @@ export function RecordingPage({ onNavigate, songId }: RecordingPageProps) {
                 fontFamily: "'Space Grotesk', sans-serif",
               }}
             >
-              {recording ? `${Math.round(confidence)}%` : "—"}
+              {recording || analysis ? `${Math.round(currentConfidence)}%` : "—"}
             </span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
             <motion.div
-              animate={{ width: recording ? `${confidence}%` : "0%" }}
+              animate={{ width: recording || analysis ? `${currentConfidence}%` : "0%" }}
               transition={{ duration: 0.15 }}
               className="h-full rounded-full"
               style={{
@@ -193,11 +276,13 @@ export function RecordingPage({ onNavigate, songId }: RecordingPageProps) {
               onClick={() => {
                 if (recording) {
                   handleStop();
+                } else if (!analysisLoading) {
+                  startRecording();
                 } else {
-                  setElapsed(0);
-                  setRecording(true);
+                  return;
                 }
               }}
+              disabled={analysisLoading}
               className="relative w-24 h-24 rounded-full flex items-center justify-center"
               style={{
                 background: recording
@@ -208,7 +293,9 @@ export function RecordingPage({ onNavigate, songId }: RecordingPageProps) {
                   : "0 0 40px rgba(157,92,255,0.5)",
               }}
             >
-              {recording ? (
+              {analysisLoading ? (
+                <Loader2 size={32} className="text-white animate-spin" />
+              ) : recording ? (
                 <Square size={32} fill="white" className="text-white" />
               ) : (
                 <Mic size={36} className="text-white" />
@@ -220,6 +307,15 @@ export function RecordingPage({ onNavigate, songId }: RecordingPageProps) {
             {recording ? "Tap to stop and see your results" : "Tap to start recording"}
           </p>
         </div>
+
+        {pageError && (
+          <div
+            className="mt-6 rounded-2xl p-4 text-center text-sm"
+            style={{ background: "rgba(255,60,172,0.1)", border: "1px solid rgba(255,60,172,0.3)", color: "#FF8ACD" }}
+          >
+            {pageError}
+          </div>
+        )}
 
         {/* Tips */}
         <div

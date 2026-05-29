@@ -4,17 +4,17 @@
  */
 
 import axios from 'axios';
+import { API_BASE_URL } from './api';
 import {
   SongUploadResponse,
   ProcessingStatus,
   SongReference,
   SongPreviewResponse,
   UploadFormData,
-  ErrorResponse,
 } from "../types/songReference";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: API_BASE_URL,
 });
 
 const BASE_URL = "/api/songs";
@@ -127,17 +127,14 @@ export async function deleteSong(songId: string): Promise<void> {
  * Handle API errors with user-friendly messages
  */
 export function handleSongServiceError(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data?.detail || error.response?.data?.message;
+    return typeof detail === "string" ? detail : "Song request failed";
+  }
+
   if (error instanceof Error) {
-    // Check for API error response
-    if ("response" in error && error.response instanceof Response) {
-      try {
-        const errorData = error.response as unknown as ErrorResponse;
-        return errorData?.message || "An error occurred";
-      } catch {
-        return error.message;
-      }
-    }
     return error.message;
   }
+
   return "An unknown error occurred";
 }

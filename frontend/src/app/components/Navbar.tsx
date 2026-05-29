@@ -1,4 +1,4 @@
-import { Music2, Mic2, BookOpen, Trophy, User, Bell, LogOut, ChevronDown, Upload } from "lucide-react";
+import { Music2, Mic2, BookOpen, Trophy, User, Bell, ChevronDown, Upload } from "lucide-react";
 import { motion } from "motion/react";
 
 interface NavbarProps {

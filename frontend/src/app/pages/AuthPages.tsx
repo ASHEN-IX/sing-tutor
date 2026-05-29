@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { Mic2, Eye, EyeOff, ArrowLeft, Mail, Lock, User } from "lucide-react";
+import { login, register, requestPasswordReset } from "@/services/authService";
+import { AuthUser } from "@/types/auth";
 
 interface AuthPagesProps {
   page: "signin" | "signup" | "forgot";
   onNavigate: (page: string) => void;
-  onLogin: () => void;
+  onLogin: (user: AuthUser) => void;
 }
 
 export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
@@ -13,14 +15,39 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (page === "signin" || page === "signup") {
-      onLogin();
-      onNavigate("dashboard");
-    } else {
+    setError("");
+    setStatus("");
+    setLoading(true);
+
+    try {
+      if (page === "signin") {
+        const user = await login(email, password);
+        onLogin(user);
+        onNavigate("dashboard");
+        return;
+      }
+
+      if (page === "signup") {
+        const user = await register(email, password, name);
+        onLogin(user);
+        onNavigate("dashboard");
+        return;
+      }
+
+      const response = await requestPasswordReset(email);
+      setStatus(response.message);
       onNavigate("signin");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Authentication failed";
+      setError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -212,19 +239,37 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
               type="submit"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              disabled={loading}
               className="w-full py-4 rounded-xl text-white font-bold mt-2"
               style={{
                 background: "linear-gradient(135deg, #9D5CFF, #FF3CAC)",
                 boxShadow: "0 8px 24px rgba(157, 92, 255, 0.4)",
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: "0.95rem",
+                opacity: loading ? 0.7 : 1,
               }}
             >
-              {page === "signin" && "Sign In →"}
-              {page === "signup" && "Create Account →"}
-              {page === "forgot" && "Send Reset Link →"}
+              {loading
+                ? "Please wait..."
+                : page === "signin"
+                ? "Sign In →"
+                : page === "signup"
+                ? "Create Account →"
+                : "Send Reset Link →"}
             </motion.button>
           </form>
+
+          {error && (
+            <p className="text-sm mt-4" style={{ color: "#FF8ACD", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              {error}
+            </p>
+          )}
+
+          {status && (
+            <p className="text-sm mt-4" style={{ color: "#3CFFA0", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              {status}
+            </p>
+          )}
 
           {/* Divider */}
           {page !== "forgot" && (

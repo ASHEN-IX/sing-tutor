@@ -4,6 +4,7 @@ import {
   ReferenceData,
   AnalysisResult,
 } from '@/types/api';
+import { getAccessToken } from './authStore';
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -17,6 +18,14 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
+    });
+
+    this.client.interceptors.request.use((config) => {
+      const token = getAccessToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
     });
   }
 

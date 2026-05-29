@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navbar } from "./components/Navbar";
 import { LandingPage } from "./pages/LandingPage";
 import { AuthPages } from "./pages/AuthPages";
@@ -13,6 +13,9 @@ import { GamificationPage } from "./pages/GamificationPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { UploadSongPage } from "./pages/UploadSongPage";
 import { PitchAnalysisResponse } from "@/types/pitch";
+import { AuthUser } from "@/types/auth";
+import { getCurrentUser, logout } from "@/services/authService";
+import { getAccessToken } from "@/services/authStore";
 
 type Page =
   | "landing"
@@ -31,8 +34,36 @@ type Page =
 export default function Home() {
   const [page, setPage] = useState<Page>("landing");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [activeSongId, setActiveSongId] = useState<string | null>(null);
   const [latestAnalysis, setLatestAnalysis] = useState<PitchAnalysisResponse | null>(null);
+
+  useEffect(() => {
+    if (!getAccessToken()) return;
+
+    let cancelled = false;
+    const loadUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!cancelled) {
+          setCurrentUser(user);
+          setIsLoggedIn(true);
+          setPage((prev) => (prev === "landing" ? "dashboard" : prev));
+        }
+      } catch {
+        if (!cancelled) {
+          setCurrentUser(null);
+          setIsLoggedIn(false);
+        }
+      }
+    };
+
+    loadUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const navigate = (p: string, songId?: string) => {
     setPage(p as Page);
@@ -40,14 +71,20 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleLogin = () => {
+  const handleLogin = (user: AuthUser) => {
+    setCurrentUser(user);
     setIsLoggedIn(true);
     setPage("dashboard");
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setPage("landing");
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      setCurrentUser(null);
+      setIsLoggedIn(false);
+      setPage("landing");
+    }
   };
 
   const showNavbar = page !== "landing";

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
-from app.schemas.pitch import ReferenceData, SongMetadata, AnalysisResult
+from app.schemas.pitch import ReferenceData, SongMetadata, AnalysisResult, PitchFeedback
 from app.db.database import get_database
 from app.api.songs import storage_service, reference_builder
 import logging
@@ -87,11 +87,17 @@ async def analyze_recording(song_id: str, recording_id: str):
     return AnalysisResult(
         recording_id=recording_id,
         song_id=song_id,
-        overall_score=85.0,
-        pitch_score=82.0,
-        rhythm_score=88.0,
-        timing_score=85.0,
-        feedback=["Good job!"]
+        overall_accuracy=85.0,
+        pitch_accuracy=82.0,
+        timing_accuracy=85.0,
+        feedback=[
+            PitchFeedback(
+                accuracy_percentage=82.0,
+                deviation_cents=12.5,
+                timing_offset=35.0,
+            )
+        ],
+        recommendations=["Keep practicing your timing on the chorus."],
     )
 
 @router.get("/health")

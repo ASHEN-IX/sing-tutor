@@ -20,3 +20,6 @@ python-dotenv
 motor==3.3.2
 pymongo==4.6.3
 # Optional ML deps removed to keep backend lightweight; add if needed later
+passlib[bcrypt]==1.7.4
+python-jose==3.3.0
+email-validator==2.2.0

@@ -124,7 +124,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                     border: `1px solid ${stat.color}25`,
                   }}
                 >
-                  <Icon size={16} style={{ color: stat.color }} />
+                  <Icon size={16} style={{ color: stat.color }} aria-hidden="true" />
                   <div>
                     <p className="text-xs" style={{ color: "#7B7FA8", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                       {stat.label}
@@ -199,11 +199,12 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                   Continue Learning
                 </h2>
                 <button
+                  type="button"
                   onClick={() => onNavigate("library")}
                   className="text-xs flex items-center gap-1"
                   style={{ color: "#9D5CFF", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
                 >
-                  View all <ChevronRight size={14} />
+                  View all <ChevronRight size={14} aria-hidden="true" />
                 </button>
               </div>
 
@@ -216,11 +217,20 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                   border: "1px solid rgba(157, 92, 255, 0.3)",
                 }}
                 onClick={() => onNavigate("learning")}
+                role="button"
+                tabIndex={0}
+                aria-label="Continue learning Blinding Lights"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onNavigate("learning");
+                  }
+                }}
               >
                 <div className="flex gap-4">
                   <img
                     src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop&auto=format"
-                    alt="Song"
+                    alt="Blinding Lights cover"
                     className="w-16 h-16 rounded-xl object-cover"
                   />
                   <div className="flex-1">
@@ -248,13 +258,15 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                     </div>
                   </div>
                   <button
+                    type="button"
                     className="self-center w-12 h-12 rounded-full flex items-center justify-center"
                     style={{
                       background: "linear-gradient(135deg, #9D5CFF, #FF3CAC)",
                       boxShadow: "0 4px 20px rgba(157, 92, 255, 0.5)",
                     }}
+                    aria-label="Play Blinding Lights"
                   >
-                    <Play size={18} fill="white" className="text-white ml-0.5" />
+                    <Play size={18} fill="white" className="text-white ml-0.5" aria-hidden="true" />
                   </button>
                 </div>
               </motion.div>
@@ -274,23 +286,25 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                   Recommended for You
                 </h2>
                 <button
+                  type="button"
                   onClick={() => onNavigate("library")}
                   className="text-xs flex items-center gap-1"
                   style={{ color: "#9D5CFF", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
                 >
-                  Browse all <ChevronRight size={14} />
+                  Browse all <ChevronRight size={14} aria-hidden="true" />
                 </button>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {recommended.map((song, i) => (
-                  <motion.div
+                  <motion.button
                     key={song.title}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.08 }}
                     whileHover={{ y: -4 }}
-                    className="rounded-xl overflow-hidden cursor-pointer group"
+                    type="button"
+                    className="rounded-xl overflow-hidden cursor-pointer group text-left"
                     style={{
                       background: "rgba(255,255,255,0.04)",
                       border: "1px solid rgba(255,255,255,0.06)",
@@ -307,7 +321,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                         style={{ background: "rgba(0,0,0,0.5)" }}
                       >
-                        <Play size={20} fill="white" className="text-white" />
+                        <Play size={20} fill="white" className="text-white" aria-hidden="true" />
                       </div>
                     </div>
                     <div className="p-2.5">
@@ -330,7 +344,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                         {song.difficulty}
                       </span>
                     </div>
-                  </motion.div>
+                  </motion.button>
                 ))}
               </div>
             </section>

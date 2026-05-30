@@ -18,6 +18,7 @@ from app.services.melody_extractor import MelodyExtractor
 from app.services.lyrics_parser import LyricsParser
 from app.services.lyrics_aligner import LyricsAligner
 from app.schemas.song_reference import SongReference, ProcessingDiagnostics
+from app.services.whisperx_aligner import WhisperXAligner
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,11 @@ class ReferenceBuilder:
         self.melody_extractor = MelodyExtractor(sr=sr)
         self.lyrics_parser = LyricsParser()
         self.lyrics_aligner = LyricsAligner()
+        # WhisperX aligner (optional)
+        try:
+            self.whisperx_aligner = WhisperXAligner()
+        except Exception:
+            self.whisperx_aligner = None
         self.sr = sr
         logger.info("ReferenceBuilder initialized")
 
@@ -87,6 +93,7 @@ class ReferenceBuilder:
             beats = []
             pitch_data = []
             lyrics = []
+            lyric_lines = []
             sections = []
 
             # Process audio if provided
@@ -105,13 +112,21 @@ class ReferenceBuilder:
 
                 # Prefer Whisper alignment when audio is available
                 if audio_path:
+                    # Prefer the dedicated WhisperX aligner when available
                     try:
-                        aligned_lyrics, match_ratio = self.lyrics_aligner.align_lyrics_with_whisper(
-                            lyric_objects,
-                            audio_path,
-                            metadata["duration"],
-                            language=language
-                        )
+                        if self.whisperx_aligner:
+                            aligned_lyrics, match_ratio = self.whisperx_aligner.align(
+                                audio_path,
+                                lyric_objects,
+                                language=language,
+                            )
+                        else:
+                            aligned_lyrics, match_ratio = self.lyrics_aligner.align_lyrics_with_whisper(
+                                lyric_objects,
+                                audio_path,
+                                metadata["duration"],
+                                language=language
+                            )
                     except Exception as e:
                         logger.warning("Whisper alignment failed (%s). Falling back to beats.", e)
                         aligned_lyrics = self.lyrics_aligner.align_lyrics_to_beats(
@@ -125,7 +140,14 @@ class ReferenceBuilder:
                         beats,
                         metadata["duration"]
                     )
-                lyrics = aligned_lyrics
+                lyrics, lyric_warnings = self._validate_lyric_timing(
+                    aligned_lyrics,
+                    metadata["duration"]
+                )
+                if lyric_warnings:
+                    for warning in lyric_warnings:
+                        logger.warning("Lyrics timing warning: %s", warning)
+                lyric_lines = self._build_lyric_lines(lyrics_text, lyrics, metadata["duration"])
 
             # Calculate alignment quality
             if match_ratio is not None:
@@ -159,6 +181,8 @@ class ReferenceBuilder:
             diagnostics = ProcessingDiagnostics(
                 processing_time_seconds=processing_time,
                 alignment_quality=alignment_quality,
+                alignment_model=(self.whisperx_aligner.model_name if (self.whisperx_aligner and match_ratio is not None) else ("beats" if match_ratio is not None else None)),
+                match_ratio=(match_ratio if match_ratio is not None else None),
                 pitch_coverage=pitch_coverage,
                 processed_at=datetime.now(),
                 processing_version="2.0"
@@ -177,6 +201,7 @@ class ReferenceBuilder:
                 beats=beats,
                 pitch_data=pitch_data,
                 lyrics=lyrics,
+                lyric_lines=lyric_lines,
                 sections=sections,
                 diagnostics=diagnostics
             )
@@ -239,6 +264,139 @@ class ReferenceBuilder:
 
         logger.debug(f"Generated {len(sections)} sections")
         return sections
+
+    def _build_lyric_lines(self, lyrics_text: str, aligned_lyrics: list, duration: float) -> list:
+        """
+        Build lyric lines with timings using raw text line breaks.
+
+        Falls back to line grouping by word count when text lines do not match
+        word alignment length.
+        """
+        if not lyrics_text or not aligned_lyrics:
+            return []
+
+        raw_lines = [line.strip() for line in lyrics_text.splitlines() if line.strip()]
+        if not raw_lines:
+            return []
+
+        line_word_counts = []
+        for line in raw_lines:
+            words = self.lyrics_parser.parse_plain_text(line)
+            if words:
+                line_word_counts.append(len(words))
+
+        if not line_word_counts:
+            return []
+
+        total_words = sum(line_word_counts)
+        if total_words > len(aligned_lyrics):
+            return self._chunk_lyric_lines(aligned_lyrics, words_per_line=6)
+
+        lines = []
+        cursor = 0
+        for idx, line in enumerate(raw_lines):
+            if cursor >= len(aligned_lyrics):
+                break
+
+            words_in_line = line_word_counts[idx] if idx < len(line_word_counts) else 0
+            if words_in_line <= 0:
+                continue
+
+            word_slice = aligned_lyrics[cursor:cursor + words_in_line]
+            if not word_slice:
+                continue
+
+            start = word_slice[0].get("start", 0.0) or 0.0
+            end = word_slice[-1].get("end", start) or start
+            start = max(0.0, min(start, duration))
+            end = max(start, min(end, duration))
+            line_text = " ".join([w.get("word", "") for w in word_slice]).strip()
+
+            lines.append({
+                "index": idx,
+                "text": line_text,
+                "words": word_slice,
+                "start": float(start),
+                "end": float(end),
+            })
+
+            cursor += words_in_line
+
+        if not lines:
+            return self._chunk_lyric_lines(aligned_lyrics, words_per_line=6)
+
+        return lines
+
+    def _chunk_lyric_lines(self, aligned_lyrics: list, words_per_line: int = 6) -> list:
+        """Fallback: chunk aligned words into fixed-size lines."""
+        lines = []
+        for idx in range(0, len(aligned_lyrics), words_per_line):
+            word_slice = aligned_lyrics[idx:idx + words_per_line]
+            if not word_slice:
+                continue
+
+            start = word_slice[0].get("start", 0.0) or 0.0
+            end = word_slice[-1].get("end", start) or start
+            line_text = " ".join([w.get("word", "") for w in word_slice]).strip()
+
+            lines.append({
+                "index": len(lines),
+                "text": line_text,
+                "words": word_slice,
+                "start": float(start),
+                "end": float(end),
+            })
+
+        return lines
+
+    def _validate_lyric_timing(self, aligned_lyrics: list, duration: float) -> Tuple[list, list]:
+        """
+        Validate lyric timing and clamp within audio duration.
+
+        Returns:
+            Tuple of (validated_lyrics, warnings)
+        """
+        warnings = []
+        validated = []
+        prev_start = -1.0
+
+        for idx, word in enumerate(aligned_lyrics):
+            start = float(word.get("start", 0.0) or 0.0)
+            end = float(word.get("end", start) or start)
+
+            if start < 0.0 or end < 0.0:
+                warnings.append(f"Lyric {idx} has negative timing: start={start}, end={end}")
+
+            if start > duration:
+                warnings.append(f"Lyric {idx} starts after duration: start={start}, duration={duration}")
+
+            if end > duration:
+                warnings.append(f"Lyric {idx} ends after duration: end={end}, duration={duration}")
+
+            start = max(0.0, min(start, duration))
+            end = max(start, min(end, duration))
+
+            if prev_start > start:
+                warnings.append(
+                    f"Lyric {idx} out of order: start={start} < prev_start={prev_start}"
+                )
+            prev_start = start
+
+            validated.append({
+                "index": word.get("index", idx),
+                "word": word.get("word", ""),
+                "start": start,
+                "end": end,
+            })
+
+        for idx in range(len(validated) - 1):
+            gap = validated[idx + 1]["start"] - validated[idx]["end"]
+            if gap > 2.0:
+                warnings.append(
+                    f"Large gap between lyrics {idx} and {idx + 1}: {gap:.2f}s"
+                )
+
+        return validated, warnings
 
     def save_reference(self, reference: SongReference) -> None:
         """

@@ -1,4 +1,7 @@
-import { motion } from "motion/react";
+"use client";
+
+import { useRef } from "react";
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import { Mic2, Zap, BarChart3, Trophy, Star, ChevronRight, Play } from "lucide-react";
 import { ThreeDVisualizer } from "../components/ThreeDVisualizer";
 
@@ -58,6 +61,39 @@ const testimonials = [
 ];
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
+  const heroRef = useRef<HTMLElement | null>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const reduceMotion = prefersReducedMotion ?? false;
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start end", "end start"],
+  });
+  const visualizerY = useSpring(useTransform(scrollYProgress, [0, 1], [40, -40]), {
+    stiffness: 120,
+    damping: 20,
+    mass: 0.6,
+  });
+  const visualizerRotate = useSpring(useTransform(scrollYProgress, [0, 1], [0, -6]), {
+    stiffness: 120,
+    damping: 20,
+    mass: 0.6,
+  });
+  const visualizerScale = useSpring(useTransform(scrollYProgress, [0, 1], [1.02, 0.98]), {
+    stiffness: 120,
+    damping: 20,
+    mass: 0.6,
+  });
+  const floatScoreY = useSpring(useTransform(scrollYProgress, [0, 1], [16, -10]), {
+    stiffness: 100,
+    damping: 18,
+    mass: 0.6,
+  });
+  const floatXpY = useSpring(useTransform(scrollYProgress, [0, 1], [-12, 18]), {
+    stiffness: 100,
+    damping: 18,
+    mass: 0.6,
+  });
+
   return (
     <div
       className="min-h-screen"
@@ -86,7 +122,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       </div>
 
       {/* Hero */}
-      <section className="relative pt-32 pb-20 px-6 max-w-7xl mx-auto">
+      <section ref={heroRef} className="relative pt-28 sm:pt-32 pb-20 px-6 max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left */}
           <motion.div
@@ -142,6 +178,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
+                type="button"
                 onClick={() => onNavigate("signup")}
                 className="flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-semibold"
                 style={{
@@ -150,11 +187,12 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   fontFamily: "'Space Grotesk', sans-serif",
                 }}
               >
-                Start Singing Free <ChevronRight size={18} />
+                Start Singing Free <ChevronRight size={18} aria-hidden="true" />
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
+                type="button"
                 onClick={() => onNavigate("learning")}
                 className="flex items-center gap-2 px-8 py-4 rounded-2xl font-semibold"
                 style={{
@@ -164,7 +202,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   fontFamily: "'Space Grotesk', sans-serif",
                 }}
               >
-                <Play size={16} fill="currentColor" /> Watch Demo
+                <Play size={16} fill="currentColor" aria-hidden="true" /> Watch Demo
               </motion.button>
             </div>
 
@@ -184,7 +222,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               <div>
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={12} fill="#FFD700" style={{ color: "#FFD700" }} />
+                    <Star key={i} size={12} fill="#FFD700" style={{ color: "#FFD700" }} aria-hidden="true" />
                   ))}
                 </div>
                 <span className="text-xs" style={{ color: "#7B7FA8" }}>
@@ -200,15 +238,33 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, delay: 0.2 }}
             className="relative"
+            style={{
+              perspective: "1200px",
+              transformStyle: "preserve-3d",
+            }}
           >
-            <div
+            <motion.div
               className="rounded-3xl overflow-hidden p-6"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(157, 92, 255, 0.2)",
                 backdropFilter: "blur(20px)",
                 boxShadow: "0 32px 80px rgba(157, 92, 255, 0.15)",
+                y: reduceMotion ? 0 : visualizerY,
+                rotateZ: reduceMotion ? 0 : visualizerRotate,
+                scale: reduceMotion ? 1 : visualizerScale,
+                transformStyle: "preserve-3d",
               }}
+              whileHover={
+                reduceMotion
+                  ? undefined
+                  : {
+                      rotateX: 4,
+                      rotateY: -6,
+                      y: -6,
+                    }
+              }
+              transition={{ type: "spring", stiffness: 160, damping: 18 }}
             >
               {/* Mini player header */}
               <div className="flex items-center gap-3 mb-4">
@@ -227,14 +283,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                     className="w-8 h-8 rounded-full flex items-center justify-center"
                     style={{ background: "linear-gradient(135deg, #9D5CFF, #FF3CAC)" }}
                   >
-                    <Play size={12} fill="white" className="text-white ml-0.5" />
+                    <Play size={12} fill="white" className="text-white ml-0.5" aria-hidden="true" />
                   </div>
                 </div>
               </div>
 
               {/* 3D Visualizer sound wave sphere */}
               <div className="my-4">
-                <ThreeDVisualizer isPlaying={true} />
+                <ThreeDVisualizer isPlaying={true} reduceMotion={reduceMotion} />
               </div>
 
               {/* Lyrics */}
@@ -265,49 +321,53 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   Raise your voice slightly on "blinding"
                 </span>
               </div>
-            </div>
+            </motion.div>
 
             {/* Floating score card */}
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -bottom-6 -left-8 p-4 rounded-2xl"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                backdropFilter: "blur(20px)",
-              }}
-            >
-              <p className="text-xs mb-1" style={{ color: "#7B7FA8" }}>Pitch Accuracy</p>
-              <p
-                className="font-bold"
+            <motion.div style={{ y: reduceMotion ? 0 : floatScoreY }}>
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -bottom-6 -left-8 p-4 rounded-2xl"
                 style={{
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  background: "linear-gradient(135deg, #3CFFA0, #00D4FF)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  fontSize: "1.5rem",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  backdropFilter: "blur(20px)",
                 }}
               >
-                94%
-              </p>
+                <p className="text-xs mb-1" style={{ color: "#7B7FA8" }}>Pitch Accuracy</p>
+                <p
+                  className="font-bold"
+                  style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    background: "linear-gradient(135deg, #3CFFA0, #00D4FF)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    fontSize: "1.5rem",
+                  }}
+                >
+                  94%
+                </p>
+              </motion.div>
             </motion.div>
 
             {/* Floating XP card */}
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-              className="absolute -top-4 -right-6 p-3 rounded-2xl"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                backdropFilter: "blur(20px)",
-              }}
-            >
-              <p className="text-xs font-bold" style={{ color: "#FFD700", fontFamily: "'Space Grotesk', sans-serif" }}>
-                🏆 +120 XP
-              </p>
-              <p className="text-xs" style={{ color: "#7B7FA8" }}>Song completed!</p>
+            <motion.div style={{ y: reduceMotion ? 0 : floatXpY }}>
+              <motion.div
+                animate={{ y: [0, 8, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                className="absolute -top-4 -right-6 p-3 rounded-2xl"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  backdropFilter: "blur(20px)",
+                }}
+              >
+                <p className="text-xs font-bold" style={{ color: "#FFD700", fontFamily: "'Space Grotesk', sans-serif" }}>
+                  🏆 +120 XP
+                </p>
+                <p className="text-xs" style={{ color: "#7B7FA8" }}>Song completed!</p>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>
@@ -368,7 +428,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
                   style={{ background: `${f.color}20`, border: `1px solid ${f.color}40` }}
                 >
-                  <Icon size={22} style={{ color: f.color }} />
+                  <Icon size={22} style={{ color: f.color }} aria-hidden="true" />
                 </div>
                 <h3
                   className="mb-2 text-base"
@@ -503,7 +563,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             >
               <div className="flex items-center gap-1 mb-4">
                 {[...Array(t.stars)].map((_, si) => (
-                  <Star key={si} size={14} fill="#FFD700" style={{ color: "#FFD700" }} />
+                  <Star key={si} size={14} fill="#FFD700" style={{ color: "#FFD700" }} aria-hidden="true" />
                 ))}
               </div>
               <p className="text-sm leading-relaxed mb-6 italic" style={{ color: "#B8B0D0" }}>

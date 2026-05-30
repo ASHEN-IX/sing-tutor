@@ -72,13 +72,13 @@ class LyricsAligner:
             # Estimate word start and end
             if beat_idx == 0 and beats:
                 # Before first beat
-                start = 0.0
+                interval = beats[0] if beats[0] > 0.0 else (duration / max(n_words, 1))
+                start = max(0.0, word_time - interval / 8)
                 # If the first detected beat is at time 0.0 (common), use the next beat as the end
                 if n_beats > 1 and beats[0] == 0.0:
-                    end = beats[1]
+                    end = min(beats[1], word_time + interval / 8)
                 else:
-                    # If beat time is >0, use it; otherwise fallback to small interval
-                    end = beats[0] if beats[0] > 0.0 else min(duration, 0.5)
+                    end = min(beats[0] if beats[0] > 0.0 else min(duration, 0.5), word_time + interval / 8)
             elif beat_idx > 0 and beat_idx < n_beats:
                 # Between beats
                 prev_beat = beats[beat_idx - 1]
@@ -89,8 +89,9 @@ class LyricsAligner:
                 end = min(next_beat, word_time + beat_interval / 8)
             elif beat_idx >= n_beats and beats:
                 # After last beat
-                start = beats[-1]
-                end = duration
+                beat_interval = beats[-1] - beats[-2] if n_beats > 1 else (duration / max(n_words, 1))
+                start = max(beats[-1], word_time - beat_interval / 8)
+                end = min(duration, word_time + beat_interval / 8)
             else:
                 # No beats available
                 start = word_time

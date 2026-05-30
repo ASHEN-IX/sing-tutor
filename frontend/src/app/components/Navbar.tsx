@@ -24,9 +24,11 @@ export function Navbar({ currentPage, onNavigate, isLoggedIn }: NavbarProps) {
         borderBottom: "1px solid rgba(157, 92, 255, 0.15)",
       }}
       className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center px-6"
+      aria-label="Primary"
     >
       {/* Logo */}
       <button
+        type="button"
         onClick={() => onNavigate(isLoggedIn ? "dashboard" : "landing")}
         className="flex items-center gap-2 mr-8"
       >
@@ -34,7 +36,7 @@ export function Navbar({ currentPage, onNavigate, isLoggedIn }: NavbarProps) {
           className="w-8 h-8 rounded-lg flex items-center justify-center"
           style={{ background: "linear-gradient(135deg, #9D5CFF, #FF3CAC)" }}
         >
-          <Mic2 size={16} className="text-white" />
+          <Mic2 size={16} className="text-white" aria-hidden="true" />
         </div>
         <span
           style={{
@@ -53,35 +55,38 @@ export function Navbar({ currentPage, onNavigate, isLoggedIn }: NavbarProps) {
       {isLoggedIn ? (
         <>
           {/* Nav Items */}
-          <div className="flex items-center gap-1 flex-1">
+          <ul className="flex items-center gap-1 flex-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = currentPage === item.id;
               return (
-                <button
-                  key={item.id}
-                  onClick={() => onNavigate(item.id)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all relative"
-                  style={{
-                    color: active ? "#9D5CFF" : "#7B7FA8",
-                    background: active ? "rgba(157, 92, 255, 0.12)" : "transparent",
-                  }}
-                >
-                  <Icon size={16} />
-                  <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 500 }} className="text-sm">
-                    {item.label}
-                  </span>
-                  {active && (
-                    <motion.div
-                      layoutId="nav-indicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
-                      style={{ background: "linear-gradient(90deg, #9D5CFF, #FF3CAC)" }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+               <li key={item.id}>
+                 <button
+                   type="button"
+                   onClick={() => onNavigate(item.id)}
+                   className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all relative"
+                   style={{
+                     color: active ? "#9D5CFF" : "#7B7FA8",
+                     background: active ? "rgba(157, 92, 255, 0.12)" : "transparent",
+                   }}
+                   aria-current={active ? "page" : undefined}
+                 >
+                   <Icon size={16} aria-hidden="true" />
+                   <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 500 }} className="text-sm">
+                     {item.label}
+                   </span>
+                   {active && (
+                     <motion.div
+                       layoutId="nav-indicator"
+                       className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                       style={{ background: "linear-gradient(90deg, #9D5CFF, #FF3CAC)" }}
+                     />
+                   )}
+                 </button>
+               </li>
+             );
+           })}
+          </ul>
 
           {/* Right side */}
           <div className="flex items-center gap-3">
@@ -90,7 +95,7 @@ export function Navbar({ currentPage, onNavigate, isLoggedIn }: NavbarProps) {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
               style={{ background: "rgba(157, 92, 255, 0.15)", border: "1px solid rgba(157, 92, 255, 0.3)" }}
             >
-              <Trophy size={12} style={{ color: "#FFD700" }} />
+              <Trophy size={12} style={{ color: "#FFD700" }} aria-hidden="true" />
               <span style={{ color: "#9D5CFF", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600 }} className="text-xs">
                 2,840 XP
               </span>
@@ -106,15 +111,19 @@ export function Navbar({ currentPage, onNavigate, isLoggedIn }: NavbarProps) {
               </span>
             </div>
             <button
+              type="button"
               className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
               style={{ color: "#7B7FA8" }}
+              aria-label="Notifications"
             >
-              <Bell size={16} />
+              <Bell size={16} aria-hidden="true" />
             </button>
             {/* Avatar */}
             <button
+              type="button"
               className="flex items-center gap-2"
               onClick={() => onNavigate("profile")}
+              aria-label="Open profile"
             >
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
@@ -122,13 +131,14 @@ export function Navbar({ currentPage, onNavigate, isLoggedIn }: NavbarProps) {
               >
                 AJ
               </div>
-              <ChevronDown size={12} style={{ color: "#7B7FA8" }} />
+              <ChevronDown size={12} style={{ color: "#7B7FA8" }} aria-hidden="true" />
             </button>
           </div>
         </>
       ) : (
         <div className="flex items-center gap-3 ml-auto">
           <button
+            type="button"
             onClick={() => onNavigate("signin")}
             className="px-4 py-2 rounded-lg text-sm transition-colors"
             style={{ color: "#7B7FA8", fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 500 }}
@@ -136,6 +146,7 @@ export function Navbar({ currentPage, onNavigate, isLoggedIn }: NavbarProps) {
             Sign In
           </button>
           <button
+            type="button"
             onClick={() => onNavigate("signup")}
             className="px-4 py-2 rounded-lg text-sm text-white transition-all"
             style={{

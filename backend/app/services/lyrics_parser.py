@@ -14,6 +14,37 @@ logger = logging.getLogger(__name__)
 class LyricsParser:
     """Parses lyrics in various formats."""
 
+    def _strip_metadata_lines(self, text: str) -> str:
+        """
+        Remove common non-lyric metadata blocks (e.g., Genius suggestions).
+        """
+        lines = text.splitlines()
+        cleaned = []
+        skip_block = False
+        for line in lines:
+            stripped = line.strip()
+            lower = stripped.lower()
+
+            if not stripped:
+                if skip_block:
+                    skip_block = False
+                cleaned.append("")
+                continue
+
+            if "you might also like" in lower:
+                skip_block = True
+                continue
+
+            if skip_block:
+                continue
+
+            if "genius" in lower or "translations" in lower or "перевод" in lower:
+                continue
+
+            cleaned.append(line)
+
+        return "\n".join(cleaned)
+
     def parse_plain_text(self, text: str) -> List[str]:
         """
         Parse plain text lyrics.
@@ -121,6 +152,8 @@ class LyricsParser:
         Raises:
             ValueError: If format is invalid
         """
+        text = self._strip_metadata_lines(text)
+
         if format == "auto":
             # Auto-detect LRC format
             if "[" in text and ":" in text and "]" in text:

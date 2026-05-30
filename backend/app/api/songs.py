@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/songs", tags=["songs"])
 
 # Initialize services (in production, use dependency injection)
-storage_service = SongStorageService(base_path="backend/songs")
+# Use MongoDB GridFS for storage per project decision
+storage_service = SongStorageService(base_path="backend/songs", use_gridfs=True)
 reference_builder = ReferenceBuilder(storage_service=storage_service)
 
 
@@ -57,9 +58,19 @@ async def upload_song(
     - lyrics: Lyrics file (.txt, .lrc) or plain text
     - title: Song title
     - artist: Artist name
-    - language: ISO 639-1 code (optional)
+        await db.songs.update_one({
+            "_id": song_id,
+        }, {
+            "$set": {
+                "status": "uploaded",
+                "title": title,
+                "artist": artist,
+                "language": language,
+                "difficulty": difficulty,
+            }
+        }, upsert=True)
     - difficulty: beginner|intermediate|advanced (optional)
-
+        logger.info(f"Upload successful for {song_id}: {title} - {artist}")
     Returns:
     - song_id: Newly created song ID
     - status: "uploaded" (processing not started yet)
@@ -108,14 +119,19 @@ async def upload_song(
 
         # Store metadata for processing
         db = await get_database()
-        await db.songs.insert_one({
-            "_id": song_id,
-            "status": "uploaded",
-            "title": title,
-            "artist": artist,
-            "language": language,
-            "difficulty": difficulty,
-        })
+        await db.songs.update_one(
+            {"_id": song_id},
+            {
+                "$set": {
+                    "status": "uploaded",
+                    "title": title,
+                    "artist": artist,
+                    "language": language,
+                    "difficulty": difficulty,
+                }
+            },
+            upsert=True,
+        )
 
         logger.info(f"Upload successful for {song_id}: {title} - {artist}")
 
@@ -343,6 +359,32 @@ async def get_reference(song_id: str) -> SongReference:
         logger.error(f"Failed to get reference: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve reference: {str(e)}")
 
+@router.get(
+    "/{song_id}/audio",
+    responses={404: {"model": ErrorResponse}}
+)
+async def stream_audio(song_id: str):
+    """
+    Stream the original audio for a song. When using GridFS this will stream
+    directly from MongoDB; otherwise serves the cached local file.
+    """
+    try:
+        if not storage_service.song_exists(song_id):
+            raise HTTPException(status_code=404, detail=f"Song not found: {song_id}")
+
+        from fastapi.responses import StreamingResponse
+
+        generator = storage_service.stream_audio_file(song_id, filename="original.mp3")
+        headers = {"Content-Disposition": f'attachment; filename="{song_id}.mp3"'}
+        return StreamingResponse(generator, media_type="audio/mpeg", headers=headers)
+
+    except HTTPException:
+        raise
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Audio not found for {song_id}")
+    except Exception as e:
+        logger.error("Failed to stream audio for %s: %s", song_id, e)
+        raise HTTPException(status_code=500, detail=f"Failed to stream audio: {e}")
 
 @router.get(
     "/{song_id}/preview",

@@ -76,11 +76,12 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
       >
         {/* Back button */}
         <button
+          type="button"
           onClick={() => onNavigate("landing")}
           className="flex items-center gap-2 mb-8 text-sm transition-colors"
           style={{ color: "#7B7FA8", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} aria-hidden="true" />
           Back to home
         </button>
 
@@ -139,7 +140,7 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             {page === "signup" && (
               <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: "#7B7FA8" }}>
+                <label htmlFor="signup-name" className="block text-xs font-semibold mb-2" style={{ color: "#7B7FA8" }}>
                   YOUR NAME
                 </label>
                 <div className="relative">
@@ -147,12 +148,15 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
                     size={16}
                     className="absolute left-4 top-1/2 -translate-y-1/2"
                     style={{ color: "#7B7FA8" }}
+                    aria-hidden="true"
                   />
                   <input
+                    id="signup-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Johnson"
+                    autoComplete="name"
                     className="w-full pl-11 pr-4 py-3.5 rounded-xl text-sm outline-none transition-all"
                     style={{
                       background: "rgba(255,255,255,0.06)",
@@ -168,16 +172,18 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
             )}
 
             <div>
-              <label className="block text-xs font-semibold mb-2" style={{ color: "#7B7FA8" }}>
+              <label htmlFor="auth-email" className="block text-xs font-semibold mb-2" style={{ color: "#7B7FA8" }}>
                 EMAIL
               </label>
               <div className="relative">
-                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#7B7FA8" }} />
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#7B7FA8" }} aria-hidden="true" />
                 <input
+                  id="auth-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
+                  autoComplete="email"
                   className="w-full pl-11 pr-4 py-3.5 rounded-xl text-sm outline-none transition-all"
                   style={{
                     background: "rgba(255,255,255,0.06)",
@@ -193,16 +199,18 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
 
             {page !== "forgot" && (
               <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: "#7B7FA8" }}>
+                <label htmlFor="auth-password" className="block text-xs font-semibold mb-2" style={{ color: "#7B7FA8" }}>
                   PASSWORD
                 </label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#7B7FA8" }} />
+                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#7B7FA8" }} aria-hidden="true" />
                   <input
+                    id="auth-password"
                     type={showPass ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
+                    autoComplete={page === "signup" ? "new-password" : "current-password"}
                     className="w-full pl-11 pr-12 py-3.5 rounded-xl text-sm outline-none transition-all"
                     style={{
                       background: "rgba(255,255,255,0.06)",
@@ -218,8 +226,10 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
                     onClick={() => setShowPass(!showPass)}
                     className="absolute right-4 top-1/2 -translate-y-1/2"
                     style={{ color: "#7B7FA8" }}
+                    aria-label={showPass ? "Hide password" : "Show password"}
+                    aria-pressed={showPass}
                   >
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPass ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                   </button>
                 </div>
                 {page === "signin" && (
@@ -260,13 +270,22 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
           </form>
 
           {error && (
-            <p className="text-sm mt-4" style={{ color: "#FF8ACD", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <p
+              className="text-sm mt-4"
+              style={{ color: "#FF8ACD", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+              role="alert"
+              aria-live="polite"
+            >
               {error}
             </p>
           )}
 
           {status && (
-            <p className="text-sm mt-4" style={{ color: "#3CFFA0", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <p
+              className="text-sm mt-4"
+              style={{ color: "#3CFFA0", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+              aria-live="polite"
+            >
               {status}
             </p>
           )}
@@ -280,6 +299,7 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
                 <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
               </div>
               <button
+                type="button"
                 className="w-full py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
                 style={{
                   background: "rgba(255,255,255,0.06)",
@@ -299,6 +319,7 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
               <>
                 Don't have an account?{" "}
                 <button
+                  type="button"
                   onClick={() => onNavigate("signup")}
                   style={{ color: "#9D5CFF", fontWeight: 600 }}
                 >
@@ -309,6 +330,7 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
               <>
                 Already have an account?{" "}
                 <button
+                  type="button"
                   onClick={() => onNavigate("signin")}
                   style={{ color: "#9D5CFF", fontWeight: 600 }}
                 >
@@ -319,6 +341,7 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
               <>
                 Remember it?{" "}
                 <button
+                  type="button"
                   onClick={() => onNavigate("signin")}
                   style={{ color: "#9D5CFF", fontWeight: 600 }}
                 >

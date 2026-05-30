@@ -76,10 +76,12 @@ export function ProfilePage({ onNavigate, onLogout }: ProfilePageProps) {
                   AJ
                 </div>
                 <button
+                  type="button"
                   className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center"
                   style={{ background: "#1A1F35", border: "1px solid rgba(157,92,255,0.3)" }}
+                  aria-label="Edit profile"
                 >
-                  <Edit3 size={12} style={{ color: "#9D5CFF" }} />
+                  <Edit3 size={12} style={{ color: "#9D5CFF" }} aria-hidden="true" />
                 </button>
               </div>
               <h2
@@ -149,6 +151,7 @@ export function ProfilePage({ onNavigate, onLogout }: ProfilePageProps) {
             {/* Actions */}
             <div className="space-y-2">
               <button
+                type="button"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors"
                 style={{
                   background: "rgba(255,255,255,0.04)",
@@ -157,10 +160,11 @@ export function ProfilePage({ onNavigate, onLogout }: ProfilePageProps) {
                   fontFamily: "'Plus Jakarta Sans', sans-serif",
                 }}
               >
-                <Settings size={16} style={{ color: "#7B7FA8" }} />
+                <Settings size={16} style={{ color: "#7B7FA8" }} aria-hidden="true" />
                 Settings
               </button>
               <button
+                type="button"
                 onClick={onLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors"
                 style={{
@@ -170,7 +174,7 @@ export function ProfilePage({ onNavigate, onLogout }: ProfilePageProps) {
                   fontFamily: "'Plus Jakarta Sans', sans-serif",
                 }}
               >
-                <LogOut size={16} />
+                <LogOut size={16} aria-hidden="true" />
                 Sign Out
               </button>
             </div>
@@ -271,6 +275,15 @@ export function ProfilePage({ onNavigate, onLogout }: ProfilePageProps) {
                     className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
                     style={{ background: "rgba(255,255,255,0.03)" }}
                     onClick={() => onNavigate("learning")}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open ${song.title}`}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onNavigate("learning");
+                      }
+                    }}
                   >
                     <img src={song.cover} alt={song.title} className="w-10 h-10 rounded-lg object-cover" />
                     <div className="flex-1">

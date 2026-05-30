@@ -99,6 +99,7 @@ htmlcov/
 # dotenv environment variables file
 .env.test
 
-# MacOS
-.AppleDouble
-.AppleDB
+
+sprints.md
+*.txt
+*.mp3

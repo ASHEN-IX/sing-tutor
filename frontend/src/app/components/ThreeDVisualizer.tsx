@@ -4,18 +4,21 @@ interface ThreeDVisualizerProps {
   isPlaying?: boolean;
   color1?: string;
   color2?: string;
+  reduceMotion?: boolean;
 }
 
 export function ThreeDVisualizer({
   isPlaying = true,
   color1 = "#9D5CFF",
   color2 = "#FF3CAC",
+  reduceMotion = false,
 }: ThreeDVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
+    if (reduceMotion) return;
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
@@ -33,7 +36,7 @@ export function ThreeDVisualizer({
         container.removeEventListener("mousemove", handleMouseMove);
       }
     };
-  }, []);
+  }, [reduceMotion]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -74,11 +77,13 @@ export function ThreeDVisualizer({
     let time = 0;
     const render = () => {
       ctx.clearRect(0, 0, width, height);
-      time += isPlaying ? 0.03 : 0.005;
+      time += isPlaying ? (reduceMotion ? 0.01 : 0.03) : reduceMotion ? 0.002 : 0.005;
 
       // 3D rotation angles based on time and mouse coordinates
-      const angleX = 0.5 + mouse.y * 0.15;
-      const angleY = time * 0.35 + mouse.x * 0.25;
+      const mx = reduceMotion ? 0 : mouse.x;
+      const my = reduceMotion ? 0 : mouse.y;
+      const angleX = 0.5 + my * 0.15;
+      const angleY = time * 0.35 + mx * 0.25;
 
       const cosX = Math.cos(angleX);
       const sinX = Math.sin(angleX);
@@ -174,6 +179,8 @@ export function ThreeDVisualizer({
         border: "1px solid rgba(157, 92, 255, 0.12)",
         backdropFilter: "blur(12px)",
       }}
+      aria-hidden="true"
+      role="presentation"
     >
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
       {/* Visual Enhancers */}

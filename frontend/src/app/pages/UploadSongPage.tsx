@@ -80,11 +80,12 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
       <div className="max-w-2xl mx-auto relative">
         {/* Back */}
         <button
+          type="button"
           onClick={() => onNavigate("library")}
           className="flex items-center gap-1.5 text-sm mb-6"
           style={{ color: "#7B7FA8", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
         >
-          <ChevronLeft size={16} /> Back to Library
+          <ChevronLeft size={16} aria-hidden="true" /> Back to Library
         </button>
 
         {/* Header */}
@@ -117,10 +118,11 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
             >
               {/* Title */}
               <div>
-                <label className="text-xs font-semibold mb-2 block" style={{ color: "#7B7FA8", fontFamily: "'Space Grotesk', sans-serif" }}>
+                <label htmlFor="song-title" className="text-xs font-semibold mb-2 block" style={{ color: "#7B7FA8", fontFamily: "'Space Grotesk', sans-serif" }}>
                   Song Title
                 </label>
                 <input
+                  id="song-title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -137,10 +139,11 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
 
               {/* Artist */}
               <div>
-                <label className="text-xs font-semibold mb-2 block" style={{ color: "#7B7FA8", fontFamily: "'Space Grotesk', sans-serif" }}>
+                <label htmlFor="song-artist" className="text-xs font-semibold mb-2 block" style={{ color: "#7B7FA8", fontFamily: "'Space Grotesk', sans-serif" }}>
                   Artist
                 </label>
                 <input
+                  id="song-artist"
                   type="text"
                   value={artist}
                   onChange={(e) => setArtist(e.target.value)}
@@ -164,6 +167,7 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
                   {difficulties.map((d) => (
                     <button
                       key={d.value}
+                      type="button"
                       onClick={() => setDifficulty(d.value)}
                       className="flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all"
                       style={{
@@ -172,6 +176,7 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
                         color: difficulty === d.value ? d.color : "#7B7FA8",
                         fontFamily: "'Space Grotesk', sans-serif",
                       }}
+                      aria-pressed={difficulty === d.value}
                     >
                       {d.label}
                     </button>
@@ -181,10 +186,11 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
 
               {/* Language */}
               <div>
-                <label className="text-xs font-semibold mb-2 block" style={{ color: "#7B7FA8", fontFamily: "'Space Grotesk', sans-serif" }}>
+                <label htmlFor="song-language" className="text-xs font-semibold mb-2 block" style={{ color: "#7B7FA8", fontFamily: "'Space Grotesk', sans-serif" }}>
                   Language
                 </label>
                 <select
+                  id="song-language"
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl text-sm outline-none appearance-none"
@@ -272,6 +278,7 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                type="button"
                 onClick={handleSubmit}
                 disabled={!audioFile || !lyricsFile || !title || !artist}
                 className="w-full py-4 rounded-2xl text-white font-bold flex items-center justify-center gap-2 transition-opacity"
@@ -376,6 +383,7 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
                 <motion.button
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.97 }}
+                  type="button"
                   onClick={() => onNavigate("learning", songId)}
                   className="flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-semibold"
                   style={{
@@ -389,6 +397,7 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
                 <motion.button
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.97 }}
+                  type="button"
                   onClick={() => onNavigate("library")}
                   className="flex items-center gap-2 px-8 py-4 rounded-2xl font-semibold"
                   style={{
@@ -429,10 +438,13 @@ export function UploadSongPage({ onNavigate }: UploadSongPageProps) {
               >
                 Something went wrong
               </h2>
-              <p className="text-sm mb-8" style={{ color: "#FF3CAC" }}>{error}</p>
+              <p className="text-sm mb-8" style={{ color: "#FF3CAC" }} role="alert" aria-live="polite">
+                {error}
+              </p>
               <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
+                type="button"
                 onClick={() => { setStep("form"); setError(""); }}
                 className="px-8 py-3 rounded-xl font-semibold"
                 style={{

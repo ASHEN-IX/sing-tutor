@@ -24,6 +24,17 @@ export interface LyricsWord {
 }
 
 /**
+ * Lyric line grouping with timing
+ */
+export interface LyricLine {
+  index: number;
+  text: string;
+  words: LyricsWord[];
+  start: number;
+  end: number;
+}
+
+/**
  * Named section of the song
  */
 export interface SongSection {
@@ -59,6 +70,7 @@ export interface SongReference {
   beats: number[];
   pitch_data: PitchDataPoint[];
   lyrics: LyricsWord[];
+  lyric_lines?: LyricLine[];
   sections: SongSection[];
   diagnostics: ProcessingDiagnostics;
 }

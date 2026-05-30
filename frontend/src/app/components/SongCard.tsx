@@ -28,10 +28,11 @@ export function SongCard({ song, onPlay }: SongCardProps) {
   const diff = difficultyColors[song.difficulty];
 
   return (
-    <motion.div
+    <motion.button
       whileHover={{ y: -4, scale: 1.01 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className="group relative rounded-2xl overflow-hidden cursor-pointer"
+      type="button"
+      className="group relative rounded-2xl overflow-hidden cursor-pointer text-left w-full"
       style={{
         background: "rgba(255,255,255,0.04)",
         border: "1px solid rgba(157, 92, 255, 0.12)",
@@ -43,7 +44,7 @@ export function SongCard({ song, onPlay }: SongCardProps) {
       <div className="relative aspect-square overflow-hidden">
         <img
           src={song.cover}
-          alt={song.title}
+          alt={`${song.title} cover`}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
         <div
@@ -59,7 +60,7 @@ export function SongCard({ song, onPlay }: SongCardProps) {
               boxShadow: "0 0 30px rgba(157, 92, 255, 0.6)",
             }}
           >
-            <Play size={20} className="text-white ml-1" fill="white" />
+            <Play size={20} className="text-white ml-1" fill="white" aria-hidden="true" />
           </div>
         </div>
         {/* Difficulty badge */}
@@ -86,13 +87,13 @@ export function SongCard({ song, onPlay }: SongCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <Clock size={11} style={{ color: "#7B7FA8" }} />
+              <Clock size={11} style={{ color: "#7B7FA8" }} aria-hidden="true" />
               <span className="text-xs" style={{ color: "#7B7FA8", fontFamily: "'Space Grotesk', sans-serif" }}>
                 {song.duration}
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <Star size={11} style={{ color: "#FFD700" }} fill="#FFD700" />
+              <Star size={11} style={{ color: "#FFD700" }} fill="#FFD700" aria-hidden="true" />
               <span className="text-xs" style={{ color: "#7B7FA8", fontFamily: "'Space Grotesk', sans-serif" }}>
                 {song.rating}
               </span>
@@ -102,7 +103,7 @@ export function SongCard({ song, onPlay }: SongCardProps) {
             className="flex items-center gap-1 px-2 py-1 rounded-full"
             style={{ background: "rgba(157, 92, 255, 0.12)" }}
           >
-            <Music size={10} style={{ color: "#9D5CFF" }} />
+            <Music size={10} style={{ color: "#9D5CFF" }} aria-hidden="true" />
             <span className="text-xs font-bold" style={{ color: "#9D5CFF", fontFamily: "'Space Grotesk', sans-serif" }}>
               +{song.xp} XP
             </span>
@@ -125,6 +126,6 @@ export function SongCard({ song, onPlay }: SongCardProps) {
           ))}
         </div>
       </div>
-    </motion.div>
+    </motion.button>
   );
 }

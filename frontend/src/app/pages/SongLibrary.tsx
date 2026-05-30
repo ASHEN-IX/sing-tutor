@@ -212,8 +212,12 @@ export function SongLibrary({ onNavigate }: SongLibraryProps) {
         {/* Search + Filter bar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#7B7FA8" }} />
+            <label htmlFor="song-search" className="sr-only">
+              Search songs or artists
+            </label>
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "#7B7FA8" }} aria-hidden="true" />
             <input
+              id="song-search"
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -228,6 +232,7 @@ export function SongLibrary({ onNavigate }: SongLibraryProps) {
             />
           </div>
           <button
+            type="button"
             className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
             style={{
               background: "rgba(255,255,255,0.06)",
@@ -236,7 +241,7 @@ export function SongLibrary({ onNavigate }: SongLibraryProps) {
               fontFamily: "'Plus Jakarta Sans', sans-serif",
             }}
           >
-            <SlidersHorizontal size={16} />
+            <SlidersHorizontal size={16} aria-hidden="true" />
             Filters
           </button>
         </div>
@@ -246,6 +251,7 @@ export function SongLibrary({ onNavigate }: SongLibraryProps) {
           {difficulties.map((d) => (
             <button
               key={d}
+              type="button"
               onClick={() => setActiveDiff(d)}
               className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
               style={{
@@ -254,6 +260,7 @@ export function SongLibrary({ onNavigate }: SongLibraryProps) {
                 border: activeDiff === d ? "none" : "1px solid rgba(255,255,255,0.08)",
                 fontFamily: "'Space Grotesk', sans-serif",
               }}
+              aria-pressed={activeDiff === d}
             >
               {d}
             </button>
@@ -265,6 +272,7 @@ export function SongLibrary({ onNavigate }: SongLibraryProps) {
           {genres.map((g) => (
             <button
               key={g}
+              type="button"
               onClick={() => setActiveGenre(g)}
               className="px-3 py-1 rounded-full text-xs transition-all"
               style={{
@@ -273,6 +281,7 @@ export function SongLibrary({ onNavigate }: SongLibraryProps) {
                 border: activeGenre === g ? "1px solid rgba(0, 212, 255, 0.35)" : "1px solid rgba(255,255,255,0.06)",
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
+              aria-pressed={activeGenre === g}
             >
               #{g}
             </button>

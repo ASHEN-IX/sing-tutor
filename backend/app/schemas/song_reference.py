@@ -45,6 +45,33 @@ class LyricsWord(BaseModel):
         }
 
 
+class LyricLine(BaseModel):
+    """Lyric line grouping with word timings."""
+    index: int = Field(..., description="Line index in lyrics")
+    text: str = Field(..., description="Full line text")
+    words: List[LyricsWord] = Field(default_factory=list, description="Words in the line")
+    start: float = Field(..., ge=0, description="Line start time in seconds")
+    end: float = Field(..., ge=0, description="Line end time in seconds")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "index": 0,
+                "text": "I've been tryna call",
+                "words": [
+                    {
+                        "index": 0,
+                        "word": "I've",
+                        "start": 0.0,
+                        "end": 0.4
+                    }
+                ],
+                "start": 0.0,
+                "end": 1.2
+            }
+        }
+
+
 class SongSection(BaseModel):
     """Named section of the song (verse, chorus, etc.)."""
     name: str = Field(..., description="Section name (Verse 1, Chorus, etc.)")
@@ -69,6 +96,8 @@ class ProcessingDiagnostics(BaseModel):
     """Metadata about the processing run."""
     processing_time_seconds: float = Field(..., description="Total processing time")
     alignment_quality: float = Field(..., ge=0, le=1, description="Lyrics-audio alignment quality")
+    alignment_model: Optional[str] = Field(default=None, description="Alignment model used (whisperx, beats)")
+    match_ratio: Optional[float] = Field(default=None, ge=0, le=1, description="Raw match ratio from aligner")
     pitch_coverage: float = Field(..., ge=0, le=1, description="Coverage of pitch data")
     processed_at: datetime = Field(..., description="ISO8601 timestamp")
     processing_version: str = Field(default="2.0", description="Pipeline version")
@@ -100,6 +129,7 @@ class SongReference(BaseModel):
     beats: List[float] = Field(default_factory=list, description="Beat positions (seconds)")
     pitch_data: List[PitchDataPoint] = Field(default_factory=list, description="Pitch contour")
     lyrics: List[LyricsWord] = Field(default_factory=list, description="Words with timings")
+    lyric_lines: List[LyricLine] = Field(default_factory=list, description="Lyric lines with timings")
     sections: List[SongSection] = Field(default_factory=list, description="Song sections")
     diagnostics: ProcessingDiagnostics = Field(..., description="Processing metadata")
 
@@ -117,6 +147,7 @@ class SongReference(BaseModel):
                 "beats": [0.0, 0.714, 1.428],
                 "pitch_data": [],
                 "lyrics": [],
+                "lyric_lines": [],
                 "sections": [],
                 "diagnostics": {
                     "processing_time_seconds": 14.2,

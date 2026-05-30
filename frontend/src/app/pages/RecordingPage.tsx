@@ -149,11 +149,12 @@ export function RecordingPage({ onNavigate, songId, onAnalysisComplete }: Record
       <div className="w-full max-w-lg">
         {/* Back */}
         <button
+          type="button"
           onClick={() => onNavigate("learning")}
           className="flex items-center gap-1.5 text-sm mb-8"
           style={{ color: "#7B7FA8", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
         >
-          <ChevronLeft size={16} /> Back to learning
+          <ChevronLeft size={16} aria-hidden="true" /> Back to learning
         </button>
 
         {/* Title */}
@@ -273,6 +274,7 @@ export function RecordingPage({ onNavigate, songId, onAnalysisComplete }: Record
             <motion.button
               whileHover={{ scale: 1.06 }}
               whileTap={{ scale: 0.94 }}
+              type="button"
               onClick={() => {
                 if (recording) {
                   handleStop();
@@ -292,6 +294,7 @@ export function RecordingPage({ onNavigate, songId, onAnalysisComplete }: Record
                   ? "0 0 60px rgba(255,60,172,0.6)"
                   : "0 0 40px rgba(157,92,255,0.5)",
               }}
+              aria-label={recording ? "Stop recording" : "Start recording"}
             >
               {analysisLoading ? (
                 <Loader2 size={32} className="text-white animate-spin" />
@@ -312,6 +315,8 @@ export function RecordingPage({ onNavigate, songId, onAnalysisComplete }: Record
           <div
             className="mt-6 rounded-2xl p-4 text-center text-sm"
             style={{ background: "rgba(255,60,172,0.1)", border: "1px solid rgba(255,60,172,0.3)", color: "#FF8ACD" }}
+            role="alert"
+            aria-live="polite"
           >
             {pageError}
           </div>

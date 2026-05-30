@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Play,
@@ -43,12 +43,21 @@ const hints = [
   { icon: ArrowUp, text: "Gentle rise on the vowel", color: "#3CFFA0" },
 ];
 
+const LYRICS_SYNC_THRESHOLD = 0.05;
+
 function frequencyToMidi(frequency: number) {
   return 69 + 12 * Math.log2(frequency / 440);
 }
 
 function lyricLines(reference: SongReference | null) {
-  if (!reference?.lyrics.length) return lyrics;
+  if (!reference?.lyrics.length && !reference?.lyric_lines?.length) return lyrics;
+
+  if (reference?.lyric_lines?.length) {
+    return reference.lyric_lines.map((line) => ({
+      text: line.text,
+      time: line.start,
+    }));
+  }
 
   const lines: { text: string; time: number }[] = [];
   const wordsPerLine = 6;
@@ -64,19 +73,41 @@ function lyricLines(reference: SongReference | null) {
   return lines.length ? lines : lyrics;
 }
 
+function findCurrentLyricIndex(elapsed: number, lines: Array<{ time: number }>) {
+  if (!lines.length) return 0;
+  let left = 0;
+  let right = lines.length - 1;
+  let result = 0;
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    if (lines[mid].time <= elapsed) {
+      result = mid;
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+
+  return result;
+}
+
 export function LearningPage({ onNavigate, songId }: LearningPageProps) {
   const [reference, setReference] = useState<SongReference | null>(null);
   const [loading, setLoading] = useState(Boolean(songId));
   const [error, setError] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
   const [volume, setVolume] = useState(80);
   const [hintIdx, setHintIdx] = useState(0);
+  const [currentLyricIdx, setCurrentLyricIdx] = useState(0);
   const rafRef = useRef<number>(0);
   const startRef = useRef<number>(0);
   const elapsedRef = useRef(0);
+  const lastLyricUpdateRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const totalDuration = reference?.duration || 40;
+  const totalDuration = audioDuration || reference?.duration || 40;
 
   useEffect(() => {
     elapsedRef.current = elapsed;
@@ -146,11 +177,30 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
     return () => clearInterval(interval);
   }, [isPlaying]);
 
-  const displayLyrics = lyricLines(reference);
-  const currentLyricIdx = displayLyrics.reduce((acc, l, i) => (elapsed >= l.time ? i : acc), 0);
+  const displayLyrics = useMemo(() => lyricLines(reference), [reference]);
+  useEffect(() => {
+    setCurrentLyricIdx(0);
+    lastLyricUpdateRef.current = 0;
+  }, [reference]);
+  useEffect(() => {
+    const computedLyricIdx = findCurrentLyricIndex(elapsed, displayLyrics);
+    if (
+      computedLyricIdx !== currentLyricIdx &&
+      elapsed - lastLyricUpdateRef.current >= LYRICS_SYNC_THRESHOLD
+    ) {
+      setCurrentLyricIdx(computedLyricIdx);
+      lastLyricUpdateRef.current = elapsed;
+    }
+  }, [elapsed, displayLyrics, currentLyricIdx]);
   const progress = elapsed / totalDuration;
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+  const seekTo = (nextElapsed: number) => {
+    const clamped = Math.max(0, Math.min(totalDuration, nextElapsed));
+    setElapsed(clamped);
+    if (audioRef.current) audioRef.current.currentTime = clamped;
+  };
 
   const hint = hints[hintIdx];
   const HintIcon = hint.icon;
@@ -171,9 +221,9 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
       {songId && (
         <audio
           ref={audioRef}
-          src={`${API_BASE_URL}/songs/${songId}/original.mp3`}
+          src={`${API_BASE_URL}/api/songs/${songId}/audio`}
           onEnded={() => setIsPlaying(false)}
-          onTimeUpdate={(event) => setElapsed(event.currentTarget.currentTime)}
+          onLoadedMetadata={(event) => setAudioDuration(event.currentTarget.duration)}
         />
       )}
       {/* Ambient glow */}
@@ -188,11 +238,12 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
         {/* Back + song info */}
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={() => onNavigate("library")}
             className="flex items-center gap-1.5 text-sm"
             style={{ color: "#7B7FA8", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
           >
-            <ChevronLeft size={16} /> Back
+            <ChevronLeft size={16} aria-hidden="true" /> Back
           </button>
           <div className="flex items-center gap-3 flex-1">
             <img
@@ -236,9 +287,23 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const pct = (e.clientX - rect.left) / rect.width;
-              const nextElapsed = pct * totalDuration;
-              setElapsed(nextElapsed);
-              if (audioRef.current) audioRef.current.currentTime = nextElapsed;
+              seekTo(pct * totalDuration);
+            }}
+            role="slider"
+            tabIndex={0}
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(totalDuration)}
+            aria-valuenow={Math.round(elapsed)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowRight") {
+                event.preventDefault();
+                seekTo(elapsed + 5);
+              }
+              if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                seekTo(elapsed - 5);
+              }
             }}
           >
             <div
@@ -378,7 +443,7 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
         <div className="flex items-center justify-between">
           {/* Volume */}
           <div className="flex items-center gap-2">
-            <Volume2 size={16} style={{ color: "#7B7FA8" }} />
+              <Volume2 size={16} style={{ color: "#7B7FA8" }} aria-hidden="true" />
             <input
               type="range"
               min="0"
@@ -387,40 +452,47 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
               onChange={(e) => setVolume(Number(e.target.value))}
               className="w-20 accent-purple-500"
               style={{ accentColor: "#9D5CFF" }}
-            />
-          </div>
+                aria-label="Volume"
+              />
+            </div>
 
           {/* Playback */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setElapsed(Math.max(0, elapsed - 5))}
+              type="button"
+              onClick={() => seekTo(elapsed - 5)}
               className="w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.06)" }}
+              aria-label="Skip back 5 seconds"
             >
-              <SkipBack size={18} style={{ color: "#E8E0FF" }} />
+              <SkipBack size={18} style={{ color: "#E8E0FF" }} aria-hidden="true" />
             </button>
             <motion.button
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.93 }}
+              type="button"
               onClick={() => setIsPlaying(!isPlaying)}
               className="w-14 h-14 rounded-full flex items-center justify-center"
               style={{
                 background: "linear-gradient(135deg, #9D5CFF, #FF3CAC)",
                 boxShadow: "0 0 30px rgba(157, 92, 255, 0.5)",
               }}
+              aria-label={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
-                <Pause size={22} fill="white" className="text-white" />
+                <Pause size={22} fill="white" className="text-white" aria-hidden="true" />
               ) : (
-                <Play size={22} fill="white" className="text-white ml-0.5" />
+                <Play size={22} fill="white" className="text-white ml-0.5" aria-hidden="true" />
               )}
             </motion.button>
             <button
-              onClick={() => setElapsed(Math.min(totalDuration, elapsed + 5))}
+              type="button"
+              onClick={() => seekTo(elapsed + 5)}
               className="w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.06)" }}
+              aria-label="Skip forward 5 seconds"
             >
-              <SkipForward size={18} style={{ color: "#E8E0FF" }} />
+              <SkipForward size={18} style={{ color: "#E8E0FF" }} aria-hidden="true" />
             </button>
           </div>
 
@@ -428,6 +500,7 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            type="button"
             onClick={() => onNavigate("recording", songId || undefined)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
             style={{
@@ -436,8 +509,9 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
               color: "#FF3CAC",
               fontFamily: "'Space Grotesk', sans-serif",
             }}
+            aria-label="Record your singing"
           >
-            <Mic size={16} />
+            <Mic size={16} aria-hidden="true" />
             Record
           </motion.button>
         </div>

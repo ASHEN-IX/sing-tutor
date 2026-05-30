@@ -99,22 +99,24 @@ export default function Home() {
         <Navbar currentPage={page} onNavigate={navigate} isLoggedIn={isLoggedIn} />
       )}
 
-      {page === "landing" && <LandingPage onNavigate={navigate} />}
+      <main id="main-content" className="flex-1">
+        {page === "landing" && <LandingPage onNavigate={navigate} />}
 
-      {(page === "signin" || page === "signup" || page === "forgot") && (
-        <AuthPages page={page} onNavigate={navigate} onLogin={handleLogin} />
-      )}
+        {(page === "signin" || page === "signup" || page === "forgot") && (
+          <AuthPages page={page} onNavigate={navigate} onLogin={handleLogin} />
+        )}
 
-      {page === "dashboard" && <Dashboard onNavigate={navigate} />}
-      {page === "library" && <SongLibrary onNavigate={navigate} />}
-      {page === "upload" && <UploadSongPage onNavigate={navigate} />}
-      {page === "learning" && <LearningPage onNavigate={navigate} songId={activeSongId} />}
-      {page === "recording" && (
-        <RecordingPage onNavigate={navigate} songId={activeSongId} onAnalysisComplete={setLatestAnalysis} />
-      )}
-      {page === "results" && <ResultsPage onNavigate={navigate} songId={activeSongId} analysis={latestAnalysis} />}
-      {page === "gamification" && <GamificationPage onNavigate={navigate} />}
-      {page === "profile" && <ProfilePage onNavigate={navigate} onLogout={handleLogout} />}
+        {page === "dashboard" && <Dashboard onNavigate={navigate} />}
+        {page === "library" && <SongLibrary onNavigate={navigate} />}
+        {page === "upload" && <UploadSongPage onNavigate={navigate} />}
+        {page === "learning" && <LearningPage onNavigate={navigate} songId={activeSongId} />}
+        {page === "recording" && (
+          <RecordingPage onNavigate={navigate} songId={activeSongId} onAnalysisComplete={setLatestAnalysis} />
+        )}
+        {page === "results" && <ResultsPage onNavigate={navigate} songId={activeSongId} analysis={latestAnalysis} />}
+        {page === "gamification" && <GamificationPage onNavigate={navigate} />}
+        {page === "profile" && <ProfilePage onNavigate={navigate} onLogout={handleLogout} />}
+      </main>
     </div>
   );
 }

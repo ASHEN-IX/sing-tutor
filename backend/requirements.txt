@@ -13,6 +13,7 @@ setuptools<70
 
 # Whisper alignment
 openai-whisper
+whisperx
 torch
 
 pydantic

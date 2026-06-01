@@ -6,6 +6,7 @@ and generates the final reference JSON.
 """
 
 import logging
+import re
 import uuid
 from datetime import datetime
 from typing import Optional, Tuple
@@ -94,6 +95,7 @@ class ReferenceBuilder:
             pitch_data = []
             lyrics = []
             lyric_lines = []
+            rhythm_segments = []
             sections = []
 
             # Process audio if provided
@@ -105,22 +107,36 @@ class ReferenceBuilder:
 
             # Process lyrics if provided
             match_ratio = None
+            sentence_timings = []
             if lyrics_text:
                 logger.info("Processing lyrics")
                 words, lrc_metadata = self.lyrics_parser.parse_lyrics(lyrics_text, format="auto")
                 lyric_objects = self.lyrics_parser.create_lyric_objects(words)
+                sentences = self._extract_lyric_sentences(lyrics_text)
 
                 # Prefer Whisper alignment when audio is available
                 if audio_path:
-                    # Prefer the dedicated WhisperX aligner when available
+                    # Prefer sentence-level alignment first, then fall back to word-level alignment.
                     try:
                         if self.whisperx_aligner:
-                            aligned_lyrics, match_ratio = self.whisperx_aligner.align(
+                            sentence_timings, match_ratio = self.whisperx_aligner.align_sentences(
+                                audio_path,
+                                sentences,
+                                metadata["duration"],
+                                language=language,
+                            )
+                            aligned_lyrics, _ = self.whisperx_aligner.align(
                                 audio_path,
                                 lyric_objects,
                                 language=language,
                             )
                         else:
+                            sentence_timings, match_ratio = self.lyrics_aligner.align_sentences_with_whisper(
+                                sentences,
+                                audio_path,
+                                metadata["duration"],
+                                language=language
+                            )
                             aligned_lyrics, match_ratio = self.lyrics_aligner.align_lyrics_with_whisper(
                                 lyric_objects,
                                 audio_path,
@@ -128,7 +144,8 @@ class ReferenceBuilder:
                                 language=language
                             )
                     except Exception as e:
-                        logger.warning("Whisper alignment failed (%s). Falling back to beats.", e)
+                        logger.warning("Whisper sentence alignment failed (%s). Falling back to beats.", e)
+                        sentence_timings = []
                         aligned_lyrics = self.lyrics_aligner.align_lyrics_to_beats(
                             lyric_objects,
                             beats,
@@ -147,7 +164,15 @@ class ReferenceBuilder:
                 if lyric_warnings:
                     for warning in lyric_warnings:
                         logger.warning("Lyrics timing warning: %s", warning)
-                lyric_lines = self._build_lyric_lines(lyrics_text, lyrics, metadata["duration"])
+                lyric_lines = self._build_lyric_lines(
+                    lyrics_text,
+                    lyrics,
+                    metadata["duration"],
+                    sentence_timings=sentence_timings,
+                )
+
+            if not lyric_lines:
+                rhythm_segments = self._build_rhythm_segments(beats, metadata["duration"])
 
             # Calculate alignment quality
             if match_ratio is not None:
@@ -202,6 +227,7 @@ class ReferenceBuilder:
                 pitch_data=pitch_data,
                 lyrics=lyrics,
                 lyric_lines=lyric_lines,
+                rhythm_segments=rhythm_segments,
                 sections=sections,
                 diagnostics=diagnostics
             )
@@ -265,67 +291,221 @@ class ReferenceBuilder:
         logger.debug(f"Generated {len(sections)} sections")
         return sections
 
-    def _build_lyric_lines(self, lyrics_text: str, aligned_lyrics: list, duration: float) -> list:
-        """
-        Build lyric lines with timings using raw text line breaks.
-
-        Falls back to line grouping by word count when text lines do not match
-        word alignment length.
-        """
-        if not lyrics_text or not aligned_lyrics:
+    def _extract_lyric_sentences(self, lyrics_text: str) -> list:
+        """Extract sentence units while preserving raw lyric line structure."""
+        if not lyrics_text:
             return []
 
-        raw_lines = [line.strip() for line in lyrics_text.splitlines() if line.strip()]
-        if not raw_lines:
+        sentences = []
+        for raw_line in lyrics_text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            parts = [
+                part.strip()
+                for part in re.split(r'(?<=[.!?])\s+(?=["\'(\[]?[A-Z0-9])', line)
+                if part.strip()
+            ]
+            sentences.extend(parts or [line])
+
+        return sentences
+
+    def _build_lyric_lines(
+        self,
+        lyrics_text: str,
+        aligned_lyrics: list,
+        duration: float,
+        sentence_timings: Optional[list] = None,
+    ) -> list:
+        """
+        Build sentence-level lyric display records using raw text line breaks.
+
+        Sentence timing is derived from the sentence order in the lyrics file.
+        Word timings refine the boundaries when available, but the output shape
+        always remains sentence-based.
+        """
+        if not lyrics_text:
             return []
 
-        line_word_counts = []
-        for line in raw_lines:
-            words = self.lyrics_parser.parse_plain_text(line)
+        sentences = self._extract_lyric_sentences(lyrics_text)
+        if not sentences:
+            return []
+
+        if sentence_timings:
+            lines = []
+            for idx, sentence in enumerate(sentences):
+                timing = sentence_timings[idx] if idx < len(sentence_timings) else {}
+                sentence_words = timing.get("words", []) or []
+                word_groups = self._split_words_by_gap(sentence_words)
+
+                if not word_groups:
+                    start = float(timing.get("start", 0.0) or 0.0)
+                    end = float(timing.get("end", start) or start)
+                    start = max(0.0, min(start, duration))
+                    end = max(start, min(end, duration))
+                    lines.append({
+                        "index": len(lines),
+                        "text": timing.get("text", sentence),
+                        "words": sentence_words,
+                        "start": start,
+                        "end": end,
+                    })
+                    continue
+
+                for segment_index, segment_words in enumerate(word_groups):
+                    start = float(segment_words[0].get("start", 0.0) or 0.0)
+                    end = float(segment_words[-1].get("end", start) or start)
+                    start = max(0.0, min(start, duration))
+                    end = max(start, min(end, duration))
+
+                    if len(word_groups) == 1:
+                        text = timing.get("text", sentence)
+                    else:
+                        text = " ".join(
+                            word.get("word", "").strip()
+                            for word in segment_words
+                            if word.get("word", "").strip()
+                        ).strip() or timing.get("text", sentence)
+
+                    lines.append({
+                        "index": len(lines),
+                        "text": text,
+                        "words": segment_words,
+                        "start": start,
+                        "end": end,
+                    })
+
+            return lines
+
+        sentence_word_counts = []
+        for sentence in sentences:
+            words = self.lyrics_parser.parse_plain_text(sentence)
             if words:
-                line_word_counts.append(len(words))
+                sentence_word_counts.append(len(words))
+            else:
+                sentence_word_counts.append(0)
 
-        if not line_word_counts:
+        if not any(sentence_word_counts):
             return []
-
-        total_words = sum(line_word_counts)
-        if total_words > len(aligned_lyrics):
-            return self._chunk_lyric_lines(aligned_lyrics, words_per_line=6)
 
         lines = []
         cursor = 0
-        for idx, line in enumerate(raw_lines):
-            if cursor >= len(aligned_lyrics):
-                break
+        sentence_count = len([count for count in sentence_word_counts if count > 0])
+        fallback_span = duration / sentence_count if sentence_count else 0.0
 
-            words_in_line = line_word_counts[idx] if idx < len(line_word_counts) else 0
-            if words_in_line <= 0:
+        for sentence_idx, sentence in enumerate(sentences):
+            words_in_sentence = sentence_word_counts[sentence_idx] if sentence_idx < len(sentence_word_counts) else 0
+            if words_in_sentence <= 0:
                 continue
 
-            word_slice = aligned_lyrics[cursor:cursor + words_in_line]
-            if not word_slice:
-                continue
+            word_slice = aligned_lyrics[cursor:cursor + words_in_sentence] if aligned_lyrics else []
+            word_groups = self._split_words_by_gap(word_slice)
 
-            start = word_slice[0].get("start", 0.0) or 0.0
-            end = word_slice[-1].get("end", start) or start
-            start = max(0.0, min(start, duration))
-            end = max(start, min(end, duration))
-            line_text = " ".join([w.get("word", "") for w in word_slice]).strip()
+            if not word_groups:
+                start = fallback_span * len(lines)
+                end = duration if len(lines) == sentence_count - 1 else start + fallback_span
+                lines.append({
+                    "index": len(lines),
+                    "text": sentence,
+                    "words": word_slice,
+                    "start": float(start),
+                    "end": float(end),
+                })
+            else:
+                for segment_words in word_groups:
+                    if segment_words and any((word.get("end", 0.0) or 0.0) > (word.get("start", 0.0) or 0.0) for word in segment_words):
+                        start = segment_words[0].get("start", 0.0) or 0.0
+                        end = segment_words[-1].get("end", start) or start
+                        start = max(0.0, min(start, duration))
+                        end = max(start, min(end, duration))
+                    else:
+                        start = fallback_span * len(lines)
+                        end = duration if len(lines) == sentence_count - 1 else start + fallback_span
 
-            lines.append({
-                "index": idx,
-                "text": line_text,
-                "words": word_slice,
-                "start": float(start),
-                "end": float(end),
-            })
+                    text = sentence
+                    if len(word_groups) > 1:
+                        text = " ".join(
+                            word.get("word", "").strip()
+                            for word in segment_words
+                            if word.get("word", "").strip()
+                        ).strip() or sentence
 
-            cursor += words_in_line
+                    lines.append({
+                        "index": len(lines),
+                        "text": text,
+                        "words": segment_words,
+                        "start": float(start),
+                        "end": float(end),
+                    })
 
-        if not lines:
-            return self._chunk_lyric_lines(aligned_lyrics, words_per_line=6)
+            cursor += words_in_sentence
 
         return lines
+
+    def _split_words_by_gap(self, words: list, gap_threshold: float = 2.0) -> list:
+        """Split word timing lists when there is a long silence between words."""
+        if not words:
+            return []
+
+        groups = []
+        current_group = [words[0]]
+
+        for word in words[1:]:
+            previous_word = current_group[-1]
+            previous_end = float(previous_word.get("end", 0.0) or 0.0)
+            next_start = float(word.get("start", 0.0) or 0.0)
+
+            if next_start - previous_end >= gap_threshold:
+                groups.append(current_group)
+                current_group = [word]
+            else:
+                current_group.append(word)
+
+        groups.append(current_group)
+        return groups
+
+    def _build_rhythm_segments(self, beats: list, duration: float) -> list:
+        """Build a full-duration rhythm timeline for songs without lyrics."""
+        if duration <= 0:
+            return []
+
+        clean_beats = sorted(
+            {
+                float(beat)
+                for beat in beats
+                if beat is not None and 0 <= float(beat) <= duration
+            }
+        )
+
+        if clean_beats:
+            boundaries = clean_beats[:]
+            if boundaries[0] > 0:
+                boundaries.insert(0, 0.0)
+            if boundaries[-1] < duration:
+                boundaries.append(float(duration))
+        else:
+            block_count = max(1, min(32, int(np.ceil(duration / 2.0))))
+            step = duration / block_count
+            boundaries = [idx * step for idx in range(block_count)] + [float(duration)]
+
+        segments = []
+        for idx in range(len(boundaries) - 1):
+            start = max(0.0, min(float(boundaries[idx]), duration))
+            end = max(start, min(float(boundaries[idx + 1]), duration))
+            if end <= start and idx < len(boundaries) - 2:
+                continue
+
+            beat = clean_beats[idx] if idx < len(clean_beats) else None
+            segments.append({
+                "index": len(segments),
+                "text": f"Beat {len(segments) + 1}",
+                "start": start,
+                "end": end,
+                "beat": beat,
+            })
+
+        return segments
 
     def _chunk_lyric_lines(self, aligned_lyrics: list, words_per_line: int = 6) -> list:
         """Fallback: chunk aligned words into fixed-size lines."""

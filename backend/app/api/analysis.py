@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from fastapi import APIRouter, File, UploadFile, HTTPException
 
 from app.schemas.pitch import PitchAnalysisResponse
@@ -11,6 +12,8 @@ router = APIRouter(
     prefix="/api/analysis",
     tags=["analysis"],
 )
+
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -63,13 +66,15 @@ async def analyze_pitch(
         )
 
     except ValueError as exc:
+        logger.info("Pitch analysis validation error: %s", exc)
         raise HTTPException(
             status_code=400,
-            detail=str(exc),
+            detail="Unable to process the uploaded audio. Ensure the file is a valid audio format.",
         )
 
     except Exception as exc:
+        logger.exception("Unexpected error in pitch analysis")
         raise HTTPException(
             status_code=500,
-            detail=f"Pitch analysis failed: {str(exc)}",
+            detail="An internal server error occurred during pitch analysis.",
         )

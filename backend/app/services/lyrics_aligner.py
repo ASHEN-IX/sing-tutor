@@ -48,9 +48,13 @@ class LyricsAligner:
             - More accurate with more beats
             - Assumes words are distributed evenly
         """
-        if not lyric_objects or not beats:
-            logger.warning("No lyrics or beats provided. Returning unaligned lyrics.")
-            return lyric_objects
+        if not lyric_objects:
+            return []
+
+        # If there are no beats detected, distribute words evenly across duration
+        if not beats:
+            logger.warning("No beats detected — distributing words evenly across duration.")
+            return self.distribute_words_evenly(lyric_objects, duration)
 
         n_words = len(lyric_objects)
         n_beats = len(beats)
@@ -185,6 +189,93 @@ class LyricsAligner:
             match_ratio,
         )
         return aligned, float(match_ratio)
+
+    def align_sentences_with_whisper(
+        self,
+        sentences: List[str],
+        audio_path: str,
+        duration: float,
+        language: Optional[str] = None,
+        model_name: str = "base",
+    ) -> Tuple[List[dict], float]:
+        """Align sentence spans to Whisper word timestamps."""
+        if not sentences:
+            return [], 0.0
+
+        sentence_word_counts = []
+        flattened_words = []
+        for sentence in sentences:
+            words = self.parse_sentence_words(sentence)
+            sentence_word_counts.append(len(words))
+            for word in words:
+                flattened_words.append({"index": len(flattened_words), "word": word})
+
+        if not flattened_words:
+            return [], 0.0
+
+        aligned_words = self._transcribe_words(audio_path, language=language, model_name=model_name)
+        if not aligned_words:
+            raise RuntimeError("Whisper produced no word timestamps")
+
+        normalized_transcript = [self._normalize_word(w["word"]) for w in aligned_words]
+        transcript_idx = 0
+        total_matched_words = 0
+        aligned_sentences = []
+        sentence_count = len([count for count in sentence_word_counts if count > 0])
+        fallback_span = duration / sentence_count if sentence_count else 0.0
+
+        for sentence_idx, sentence in enumerate(sentences):
+            word_count = sentence_word_counts[sentence_idx] if sentence_idx < len(sentence_word_counts) else 0
+            if word_count <= 0:
+                continue
+
+            sentence_words = flattened_words[sum(sentence_word_counts[:sentence_idx]):sum(sentence_word_counts[:sentence_idx]) + word_count]
+            sentence_tokens = [self._normalize_word(word["word"]) for word in sentence_words]
+
+            matched_indices = []
+            search_idx = transcript_idx
+            for token in sentence_tokens:
+                if not token:
+                    continue
+                found = None
+                while search_idx < len(normalized_transcript):
+                    if normalized_transcript[search_idx] == token:
+                        found = search_idx
+                        search_idx += 1
+                        break
+                    search_idx += 1
+                if found is None:
+                    break
+                matched_indices.append(found)
+
+            word_slice = []
+            if matched_indices:
+                word_slice = [aligned_words[i] for i in matched_indices]
+                total_matched_words += len(matched_indices)
+                transcript_idx = matched_indices[-1] + 1
+
+            if word_slice and any((word.get("end", 0.0) or 0.0) > (word.get("start", 0.0) or 0.0) for word in word_slice):
+                start = float(word_slice[0].get("start", 0.0) or 0.0)
+                end = float(word_slice[-1].get("end", start) or start)
+                start = max(0.0, min(start, duration))
+                end = max(start, min(end, duration))
+            else:
+                start = fallback_span * len(aligned_sentences)
+                end = duration if len(aligned_sentences) == sentence_count - 1 else start + fallback_span
+
+            aligned_sentences.append({
+                "index": len(aligned_sentences),
+                "text": sentence,
+                "words": word_slice,
+                "start": float(start),
+                "end": float(end),
+            })
+
+        match_ratio = total_matched_words / max(len(flattened_words), 1)
+        if match_ratio < 0.2:
+            raise RuntimeError(f"Whisper match ratio too low ({match_ratio:.2f}); falling back")
+
+        return aligned_sentences, float(match_ratio)
 
     def calculate_alignment_quality_from_match_ratio(self, match_ratio: float) -> float:
         """Convert a Whisper match ratio to a 0-1 quality score."""
@@ -387,3 +478,10 @@ class LyricsAligner:
         text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
         text = re.sub(r"[^a-z0-9']+", "", text)
         return text
+
+    def parse_sentence_words(self, sentence: str) -> List[str]:
+        """Split a sentence into normalized word tokens."""
+        if not sentence:
+            return []
+        words = re.findall(r"[\w']+", sentence, flags=re.UNICODE)
+        return [self._normalize_word(word) for word in words if self._normalize_word(word)]

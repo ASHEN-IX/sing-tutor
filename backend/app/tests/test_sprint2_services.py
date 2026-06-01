@@ -373,6 +373,211 @@ class TestReferenceBuilder:
         assert loaded.song_id == song_id
         assert loaded.title == "Test Song"
 
+    def test_extracts_sentence_lines_from_lyrics_text(self, temp_storage_dir):
+        """Test sentence extraction preserves line structure and punctuation."""
+        storage = SongStorageService(base_path=temp_storage_dir)
+        builder = ReferenceBuilder(storage_service=storage)
+        lyrics_text = "Hello, world!\nAre you ready? I am ready."
+        aligned = [
+            {"index": 0, "word": "Hello", "start": 0.0, "end": 0.4},
+            {"index": 1, "word": "world", "start": 0.5, "end": 1.0},
+            {"index": 2, "word": "Are", "start": 1.2, "end": 1.5},
+            {"index": 3, "word": "you", "start": 1.6, "end": 1.8},
+            {"index": 4, "word": "ready", "start": 1.9, "end": 2.2},
+            {"index": 5, "word": "I", "start": 2.4, "end": 2.5},
+            {"index": 6, "word": "am", "start": 2.6, "end": 2.8},
+            {"index": 7, "word": "ready", "start": 2.9, "end": 3.4},
+        ]
+
+        lines = builder._build_lyric_lines(lyrics_text, aligned, duration=4.0)
+
+        assert [line["text"] for line in lines] == [
+            "Hello, world!",
+            "Are you ready?",
+            "I am ready.",
+        ]
+
+    def test_sentence_timing_uses_first_and_last_aligned_words(self, temp_storage_dir):
+        """Test sentence start/end timing comes from aligned word boundaries."""
+        storage = SongStorageService(base_path=temp_storage_dir)
+        builder = ReferenceBuilder(storage_service=storage)
+        lyrics_text = "First sentence\nSecond sentence"
+        aligned = [
+            {"index": 0, "word": "First", "start": 0.25, "end": 0.5},
+            {"index": 1, "word": "sentence", "start": 0.7, "end": 1.4},
+            {"index": 2, "word": "Second", "start": 2.0, "end": 2.3},
+            {"index": 3, "word": "sentence", "start": 2.5, "end": 3.2},
+        ]
+
+        lines = builder._build_lyric_lines(lyrics_text, aligned, duration=5.0)
+
+        assert lines[0]["start"] == 0.25
+        assert lines[0]["end"] == 1.4
+        assert lines[1]["start"] == 2.0
+        assert lines[1]["end"] == 3.2
+
+    def test_sentence_timing_splits_large_internal_gaps(self, temp_storage_dir):
+        """Test sentence-level timing is split when the word span has a long silence."""
+        storage = SongStorageService(base_path=temp_storage_dir)
+        builder = ReferenceBuilder(storage_service=storage)
+        lyrics_text = "Hello world again"
+        sentence_timings = [
+            {
+                "index": 0,
+                "text": "Hello world again",
+                "words": [
+                    {"index": 0, "word": "Hello", "start": 0.1, "end": 0.4},
+                    {"index": 1, "word": "world", "start": 0.5, "end": 0.9},
+                    {"index": 2, "word": "again", "start": 5.0, "end": 5.4},
+                ],
+                "start": 0.1,
+                "end": 5.4,
+            }
+        ]
+
+        lines = builder._build_lyric_lines(
+            lyrics_text,
+            aligned_lyrics=[],
+            duration=6.0,
+            sentence_timings=sentence_timings,
+        )
+
+        assert len(lines) == 2
+        assert [line["text"] for line in lines] == ["Hello world", "again"]
+        assert [line["start"] for line in lines] == [0.1, 5.0]
+        assert [line["end"] for line in lines] == [0.9, 5.4]
+
+    def test_build_reference_prefers_sentence_audio_alignment(self, temp_storage_dir):
+        """Test sentence-level audio alignment drives lyric line timings."""
+        storage = SongStorageService(base_path=temp_storage_dir)
+        builder = ReferenceBuilder(storage_service=storage)
+
+        builder.metadata_extractor.extract_all_metadata = lambda audio_path: {
+            "duration": 4.0,
+            "bpm": 120.0,
+            "key": "C Major",
+        }
+        builder.beat_detector.detect_beats_from_file = lambda audio_path: [0.0, 1.0, 2.0, 3.0]
+        builder.melody_extractor.extract_pitch_from_file = lambda audio_path: []
+
+        class FakeWhisperXAligner:
+            model_name = "small"
+
+            def align_sentences(self, audio_path, sentences, duration, language="en"):
+                assert sentences == ["Hello world!", "Goodbye moon."]
+                return [
+                    {
+                        "index": 0,
+                        "text": "Hello world!",
+                        "words": [
+                            {"index": 0, "word": "Hello", "start": 0.1, "end": 0.4},
+                            {"index": 1, "word": "world", "start": 0.5, "end": 1.2},
+                        ],
+                        "start": 0.1,
+                        "end": 1.2,
+                    },
+                    {
+                        "index": 1,
+                        "text": "Goodbye moon.",
+                        "words": [
+                            {"index": 2, "word": "Goodbye", "start": 2.0, "end": 2.5},
+                            {"index": 3, "word": "moon", "start": 2.6, "end": 3.3},
+                        ],
+                        "start": 2.0,
+                        "end": 3.3,
+                    },
+                ], 1.0
+
+            def align(self, audio_path, words, language="en"):
+                return [
+                    {"index": 0, "word": "Hello", "start": 0.1, "end": 0.4},
+                    {"index": 1, "word": "world", "start": 0.5, "end": 1.2},
+                    {"index": 2, "word": "Goodbye", "start": 2.0, "end": 2.5},
+                    {"index": 3, "word": "moon", "start": 2.6, "end": 3.3},
+                ], 1.0
+
+        builder.whisperx_aligner = FakeWhisperXAligner()
+
+        reference = builder.build_reference(
+            song_id="test_ref_sentence_audio",
+            title="Test Song",
+            artist="Test Artist",
+            audio_path="/tmp/fake.mp3",
+            lyrics_text="Hello world!\nGoodbye moon.",
+        )
+
+        assert [line.start for line in reference.lyric_lines] == [0.1, 2.0]
+        assert [line.end for line in reference.lyric_lines] == [1.2, 3.3]
+        assert [line.text for line in reference.lyric_lines] == ["Hello world!", "Goodbye moon."]
+
+    def test_build_reference_splits_sentence_when_alignment_has_long_gap(self, temp_storage_dir):
+        """Test build_reference splits a mapped sentence if the aligned words contain a long silence."""
+        storage = SongStorageService(base_path=temp_storage_dir)
+        builder = ReferenceBuilder(storage_service=storage)
+
+        builder.metadata_extractor.extract_all_metadata = lambda audio_path: {
+            "duration": 6.0,
+            "bpm": 120.0,
+            "key": "C Major",
+        }
+        builder.beat_detector.detect_beats_from_file = lambda audio_path: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
+        builder.melody_extractor.extract_pitch_from_file = lambda audio_path: []
+
+        class GapSentenceWhisperXAligner:
+            model_name = "small"
+
+            def align_sentences(self, audio_path, sentences, duration, language="en"):
+                return [
+                    {
+                        "index": 0,
+                        "text": "Hello world again",
+                        "words": [
+                            {"index": 0, "word": "Hello", "start": 0.1, "end": 0.4},
+                            {"index": 1, "word": "world", "start": 0.5, "end": 0.9},
+                            {"index": 2, "word": "again", "start": 5.0, "end": 5.4},
+                        ],
+                        "start": 0.1,
+                        "end": 5.4,
+                    }
+                ], 1.0
+
+            def align(self, audio_path, words, language="en"):
+                return [
+                    {"index": 0, "word": "Hello", "start": 0.1, "end": 0.4},
+                    {"index": 1, "word": "world", "start": 0.5, "end": 0.9},
+                    {"index": 2, "word": "again", "start": 5.0, "end": 5.4},
+                ], 1.0
+
+        builder.whisperx_aligner = GapSentenceWhisperXAligner()
+
+        reference = builder.build_reference(
+            song_id="test_ref_gap_sentence",
+            title="Test Song",
+            artist="Test Artist",
+            audio_path="/tmp/fake.mp3",
+            lyrics_text="Hello world again",
+        )
+
+        assert len(reference.lyric_lines) == 2
+        assert [line.text for line in reference.lyric_lines] == ["Hello world", "again"]
+        assert [line.start for line in reference.lyric_lines] == [0.1, 5.0]
+        assert [line.end for line in reference.lyric_lines] == [0.9, 5.4]
+
+    def test_builds_rhythm_segments_when_no_lyrics_exist(self, temp_storage_dir):
+        """Test rhythm fallback covers the full duration with or without beats."""
+        storage = SongStorageService(base_path=temp_storage_dir)
+        builder = ReferenceBuilder(storage_service=storage)
+
+        beat_segments = builder._build_rhythm_segments([1.0, 2.0, 3.0], duration=4.0)
+        assert beat_segments[0]["start"] == 0.0
+        assert beat_segments[-1]["end"] == 4.0
+        assert len(beat_segments) >= 3
+
+        even_segments = builder._build_rhythm_segments([], duration=5.0)
+        assert even_segments[0]["start"] == 0.0
+        assert even_segments[-1]["end"] == 5.0
+        assert len(even_segments) > 1
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

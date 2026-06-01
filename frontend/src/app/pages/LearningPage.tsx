@@ -16,25 +16,13 @@ import {
 import { MelodyCurve } from "../components/MelodyCurve";
 import { API_BASE_URL } from "../../services/api";
 import { getReference } from "../../services/songService";
-import { SongReference } from "../../types/songReference";
+import { getFriendlyApiErrorMessage } from "../../services/errorMessages";
+import { RhythmSegment, SongReference } from "../../types/songReference";
 
 interface LearningPageProps {
   onNavigate: (page: string, songId?: string) => void;
   songId?: string | null;
 }
-
-const lyrics = [
-  { text: "I've been tryna call", time: 0 },
-  { text: "I've been on my own for long enough", time: 4 },
-  { text: "Maybe you can show me how to love, maybe", time: 8 },
-  { text: "I'm going through withdrawals", time: 12 },
-  { text: "You don't even have to do too much", time: 16 },
-  { text: "You can turn me on with just a touch, baby", time: 20 },
-  { text: "I look around and", time: 24 },
-  { text: "Sin is the only thing that I'm feeling, aah", time: 28 },
-  { text: "I said ooh, I'm blinding lights", time: 32 },
-  { text: "I can't sleep until I feel your touch", time: 36 },
-];
 
 const hints = [
   { icon: ArrowUp, text: "Raise your voice here", color: "#9D5CFF" },
@@ -43,34 +31,159 @@ const hints = [
   { icon: ArrowUp, text: "Gentle rise on the vowel", color: "#3CFFA0" },
 ];
 
-const LYRICS_SYNC_THRESHOLD = 0.05;
+interface DisplayTimelineItem {
+  index: number;
+  text: string;
+  time: number;
+  end: number;
+  kind: "lyric" | "rhythm";
+}
 
 function frequencyToMidi(frequency: number) {
   return 69 + 12 * Math.log2(frequency / 440);
 }
 
-function lyricLines(reference: SongReference | null) {
-  if (!reference?.lyrics.length && !reference?.lyric_lines?.length) return lyrics;
+function fallbackRhythmSegments(duration: number, beats: number[] = []): RhythmSegment[] {
+  const safeDuration = duration > 0 ? duration : 40;
+  const cleanBeats = [...new Set(beats.filter((beat) => Number.isFinite(beat) && beat >= 0 && beat <= safeDuration))]
+    .sort((a, b) => a - b);
 
+  const blockCount = Math.max(1, Math.min(32, Math.ceil(safeDuration / 2)));
+  const boundaries = cleanBeats.length
+    ? [
+        ...(cleanBeats[0] > 0 ? [0] : []),
+        ...cleanBeats,
+        ...(cleanBeats[cleanBeats.length - 1] < safeDuration ? [safeDuration] : []),
+      ]
+    : Array.from({ length: blockCount + 1 }, (_, index) => (safeDuration / blockCount) * index);
+
+  return boundaries.slice(0, -1).map((start, index) => ({
+    index,
+    text: `Beat ${index + 1}`,
+    start,
+    end: boundaries[index + 1] ?? safeDuration,
+    beat: cleanBeats[index] ?? null,
+  }));
+}
+
+function offsetRhythmSegments(segments: RhythmSegment[], offset: number, indexOffset: number): RhythmSegment[] {
+  return segments.map((segment, index) => ({
+    ...segment,
+    index: indexOffset + index,
+    start: segment.start + offset,
+    end: segment.end + offset,
+  }));
+}
+
+function clipRhythmSegments(
+  segments: RhythmSegment[],
+  rangeStart: number,
+  rangeEnd: number,
+  indexOffset: number,
+  beatSource: number[] = []
+): RhythmSegment[] {
+  const clipped = segments
+    .map((segment) => ({
+      ...segment,
+      start: Math.max(segment.start, rangeStart),
+      end: Math.min(segment.end, rangeEnd),
+    }))
+    .filter((segment) => segment.end > segment.start + 0.01)
+    .map((segment, index) => ({
+      ...segment,
+      index: indexOffset + index,
+    }));
+
+  if (clipped.length) {
+    return clipped;
+  }
+
+  return offsetRhythmSegments(
+    fallbackRhythmSegments(Math.max(0, rangeEnd - rangeStart), beatSource),
+    rangeStart,
+    indexOffset
+  );
+}
+
+export function displayTimeline(reference: SongReference | null, duration: number): DisplayTimelineItem[] {
   if (reference?.lyric_lines?.length) {
-    return reference.lyric_lines.map((line) => ({
+    const lyricItems = [...reference.lyric_lines]
+      .sort((a, b) => a.start - b.start || a.end - b.end)
+      .map((line) => ({
+      index: line.index,
       text: line.text,
       time: line.start,
+      end: line.end,
+      kind: "lyric",
     }));
-  }
 
-  const lines: { text: string; time: number }[] = [];
-  const wordsPerLine = 6;
+    const rhythmSource = reference?.rhythm_segments?.length
+      ? [...reference.rhythm_segments].sort((a, b) => a.start - b.start || a.end - b.end)
+      : fallbackRhythmSegments(duration || reference?.duration || 40, reference?.beats ?? []);
 
-  for (let i = 0; i < reference.lyrics.length; i += wordsPerLine) {
-    const chunk = reference.lyrics.slice(i, i + wordsPerLine);
-    lines.push({
-      text: chunk.map((item) => item.word).join(" "),
-      time: chunk[0]?.start ?? 0,
+    const merged: DisplayTimelineItem[] = [];
+    let cursor = 0;
+
+    lyricItems.forEach((lyric, lyricIndex) => {
+      if (lyric.time > cursor + 0.01) {
+        const gapSegments = clipRhythmSegments(
+          rhythmSource,
+          cursor,
+          lyric.time,
+          merged.length,
+          reference?.beats ?? []
+        );
+
+        merged.push(
+          ...gapSegments.map((segment) => ({
+            index: segment.index,
+            text: segment.text,
+            time: segment.start,
+            end: segment.end,
+            kind: "rhythm" as const,
+          }))
+        );
+      }
+
+      merged.push(lyric);
+      cursor = Math.max(cursor, lyric.end);
+
+      const nextLyric = lyricItems[lyricIndex + 1];
+      if (!nextLyric && cursor < (duration || reference?.duration || 0) - 0.01) {
+        const tailSegments = clipRhythmSegments(
+          rhythmSource,
+          cursor,
+          duration || reference?.duration || 0,
+          merged.length,
+          reference?.beats ?? []
+        );
+
+        merged.push(
+          ...tailSegments.map((segment) => ({
+            index: segment.index,
+            text: segment.text,
+            time: segment.start,
+            end: segment.end,
+            kind: "rhythm" as const,
+          }))
+        );
+      }
     });
+
+    return merged;
   }
 
-  return lines.length ? lines : lyrics;
+  const rhythmSegments = reference?.rhythm_segments?.length
+    ? reference.rhythm_segments
+    : fallbackRhythmSegments(duration || reference?.duration || 40, reference?.beats ?? []);
+
+  return rhythmSegments.map((segment) => ({
+    index: segment.index,
+    text: segment.text,
+    time: segment.start,
+    end: segment.end,
+    kind: "rhythm",
+  }));
 }
 
 function findCurrentLyricIndex(elapsed: number, lines: Array<{ time: number }>) {
@@ -101,11 +214,9 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
   const [audioDuration, setAudioDuration] = useState(0);
   const [volume, setVolume] = useState(80);
   const [hintIdx, setHintIdx] = useState(0);
-  const [currentLyricIdx, setCurrentLyricIdx] = useState(0);
   const rafRef = useRef<number>(0);
   const startRef = useRef<number>(0);
   const elapsedRef = useRef(0);
-  const lastLyricUpdateRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const totalDuration = audioDuration || reference?.duration || 40;
 
@@ -133,7 +244,7 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load song reference");
+          setError(getFriendlyApiErrorMessage(err, "We couldn’t load this song. Please try again."));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -177,21 +288,11 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
     return () => clearInterval(interval);
   }, [isPlaying]);
 
-  const displayLyrics = useMemo(() => lyricLines(reference), [reference]);
-  useEffect(() => {
-    setCurrentLyricIdx(0);
-    lastLyricUpdateRef.current = 0;
-  }, [reference]);
-  useEffect(() => {
-    const computedLyricIdx = findCurrentLyricIndex(elapsed, displayLyrics);
-    if (
-      computedLyricIdx !== currentLyricIdx &&
-      elapsed - lastLyricUpdateRef.current >= LYRICS_SYNC_THRESHOLD
-    ) {
-      setCurrentLyricIdx(computedLyricIdx);
-      lastLyricUpdateRef.current = elapsed;
-    }
-  }, [elapsed, displayLyrics, currentLyricIdx]);
+  const displayLyrics = useMemo(() => displayTimeline(reference, totalDuration), [reference, totalDuration]);
+  const currentLyricIdx = useMemo(
+    () => findCurrentLyricIndex(elapsed, displayLyrics),
+    [elapsed, displayLyrics]
+  );
   const progress = elapsed / totalDuration;
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -383,28 +484,66 @@ export function LearningPage({ onNavigate, songId }: LearningPageProps) {
             border: "1px solid rgba(255,255,255,0.06)",
           }}
         >
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={currentLyricIdx}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.3 }}
-              className="font-bold mb-1"
-              style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: "1.15rem",
-                background: "linear-gradient(90deg, #9D5CFF, #FF3CAC)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              {displayLyrics[currentLyricIdx]?.text}
-            </motion.p>
-          </AnimatePresence>
-          <p className="text-sm" style={{ color: "#7B7FA8", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            {displayLyrics[Math.min(currentLyricIdx + 1, displayLyrics.length - 1)]?.text}
-          </p>
+          {displayLyrics[currentLyricIdx]?.kind === "rhythm" ? (
+            <div className="space-y-3">
+              <div>
+                <p
+                  className="font-bold"
+                  style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontSize: "1rem",
+                    color: "#E8E0FF",
+                  }}
+                >
+                  {displayLyrics[currentLyricIdx]?.text}
+                </p>
+                <p className="text-xs" style={{ color: "#7B7FA8" }}>
+                  Beat section
+                </p>
+              </div>
+              <div aria-label="Rhythm timeline" className="flex items-end gap-1.5 h-14">
+                {displayLyrics.map((item, index) => (
+                  <div
+                    key={`${item.kind}-${item.index}-${item.time.toFixed(3)}-${item.end.toFixed(3)}`}
+                    aria-label={item.text}
+                    className="flex-1 rounded-sm transition-colors"
+                    style={{
+                      height: index === currentLyricIdx ? "44px" : "24px",
+                      background: index === currentLyricIdx
+                        ? "linear-gradient(180deg, #9D5CFF, #FF3CAC)"
+                        : "rgba(255,255,255,0.12)",
+                      boxShadow: index === currentLyricIdx ? "0 0 18px rgba(157,92,255,0.45)" : "none",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={currentLyricIdx}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.3 }}
+                  className="font-bold mb-1"
+                  style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontSize: "1.15rem",
+                    background: "linear-gradient(90deg, #9D5CFF, #FF3CAC)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  {displayLyrics[currentLyricIdx]?.text}
+                </motion.p>
+              </AnimatePresence>
+              <p className="text-sm" style={{ color: "#7B7FA8", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                {displayLyrics[Math.min(currentLyricIdx + 1, displayLyrics.length - 1)]?.text}
+              </p>
+            </>
+          )}
         </div>
 
         {/* Coaching hint */}

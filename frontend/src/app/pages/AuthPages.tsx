@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Mic2, Eye, EyeOff, ArrowLeft, Mail, Lock, User } from "lucide-react";
 import { login, register, requestPasswordReset } from "@/services/authService";
+import { getFriendlyApiErrorMessage } from "@/services/errorMessages";
 import { AuthUser } from "@/types/auth";
 
 interface AuthPagesProps {
@@ -44,8 +45,7 @@ export function AuthPages({ page, onNavigate, onLogin }: AuthPagesProps) {
       setStatus(response.message);
       onNavigate("signin");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Authentication failed";
-      setError(message);
+      setError(getFriendlyApiErrorMessage(err, "Authentication failed. Please try again."));
     } finally {
       setLoading(false);
     }

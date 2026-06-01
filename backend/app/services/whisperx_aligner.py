@@ -6,6 +6,8 @@ alignment and return word-level timing information suitable for the
 ReferenceBuilder pipeline.
 """
 import logging
+import re
+import unicodedata
 from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
@@ -92,3 +94,71 @@ class WhisperXAligner:
         except Exception as e:
             logger.exception("WhisperX alignment failed: %s", e)
             raise RuntimeError(f"WhisperX alignment failed: {e}")
+
+    def align_sentences(
+        self,
+        audio_path: str,
+        sentences: List[str],
+        duration: float,
+        language: str = "en",
+    ) -> Tuple[List[dict], float]:
+        """Align sentence spans to audio using WhisperX word timestamps."""
+        if not sentences:
+            return [], 0.0
+
+        sentence_word_objects = []
+        sentence_word_counts = []
+        for sentence in sentences:
+            words = self._extract_words(sentence)
+            sentence_word_counts.append(len(words))
+            for word in words:
+                sentence_word_objects.append({"index": len(sentence_word_objects), "word": word})
+
+        if not sentence_word_objects:
+            return [], 0.0
+
+        aligned_words, match_ratio = self.align(audio_path, sentence_word_objects, language=language)
+
+        aligned_sentences = []
+        cursor = 0
+        sentence_count = len([count for count in sentence_word_counts if count > 0])
+        fallback_span = duration / sentence_count if sentence_count else 0.0
+
+        for idx, sentence in enumerate(sentences):
+            word_count = sentence_word_counts[idx] if idx < len(sentence_word_counts) else 0
+            if word_count <= 0:
+                continue
+
+            word_slice = aligned_words[cursor:cursor + word_count]
+            cursor += word_count
+
+            if word_slice and any((word.get("end", 0.0) or 0.0) > (word.get("start", 0.0) or 0.0) for word in word_slice):
+                start = float(word_slice[0].get("start", 0.0) or 0.0)
+                end = float(word_slice[-1].get("end", start) or start)
+                start = max(0.0, min(start, duration))
+                end = max(start, min(end, duration))
+            else:
+                start = fallback_span * len(aligned_sentences)
+                end = duration if len(aligned_sentences) == sentence_count - 1 else start + fallback_span
+
+            aligned_sentences.append({
+                "index": len(aligned_sentences),
+                "text": sentence,
+                "words": word_slice,
+                "start": float(start),
+                "end": float(end),
+            })
+
+        return aligned_sentences, float(match_ratio)
+
+    def _extract_words(self, sentence: str) -> List[str]:
+        words = re.findall(r"[\w']+", sentence or "", flags=re.UNICODE)
+        return [self._normalize_word(word) for word in words if self._normalize_word(word)]
+
+    def _normalize_word(self, word: str) -> str:
+        if not word:
+            return ""
+        text = word.strip().lower()
+        text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+        text = re.sub(r"[^a-z0-9']+", "", text)
+        return text

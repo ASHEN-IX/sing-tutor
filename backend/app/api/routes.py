@@ -46,7 +46,7 @@ async def get_song(song_id: str):
     db = await get_database()
     s = await db.songs.find_one({"_id": song_id})
     if not s or s.get("status") != "completed":
-        raise HTTPException(status_code=404, detail="Song not found or not completed")
+        raise HTTPException(status_code=404, detail="Song not found or not processed yet")
     
     try:
         ref = reference_builder.load_reference(song_id)
@@ -60,6 +60,7 @@ async def get_song(song_id: str):
             difficulty=s.get("difficulty", "beginner")
         )
     except FileNotFoundError:
+        logger.info("Reference data missing for song %s", song_id)
         raise HTTPException(status_code=404, detail="Reference data not found")
 
 
@@ -77,6 +78,7 @@ async def get_reference_data(song_id: str):
             pitch_data=[{"timestamp": p.timestamp, "frequency": p.frequency, "confidence": p.confidence} for p in ref.pitch_data]
         )
     except FileNotFoundError:
+        logger.info("Reference data missing for song %s", song_id)
         raise HTTPException(status_code=404, detail="Reference data not found")
 
 

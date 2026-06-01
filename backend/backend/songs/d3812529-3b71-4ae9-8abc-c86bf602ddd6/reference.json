@@ -1,5 +1,5 @@
 {
-  "song_id": "79443dec-6ba2-4b26-8a61-359fd5f16140",
+  "song_id": "d3812529-3b71-4ae9-8abc-c86bf602ddd6",
   "title": "tout le bonheur du monde",
   "artist": "kids united",
   "language": "fr",
@@ -4335,7 +4335,7 @@
   "lyric_lines": [
     {
       "index": 0,
-      "text": "On vous souhaite tout le bonheur",
+      "text": "On vous souhaite tout le bonheur du monde",
       "words": [
         {
           "index": 0,
@@ -4372,15 +4372,7 @@
           "word": "bonheur",
           "start": 14.208,
           "end": 14.608
-        }
-      ],
-      "start": 4.239,
-      "end": 14.608
-    },
-    {
-      "index": 1,
-      "text": "du monde Et que quelqu'un vous",
-      "words": [
+        },
         {
           "index": 6,
           "word": "du",
@@ -4392,7 +4384,15 @@
           "word": "monde",
           "start": 14.828,
           "end": 15.449
-        },
+        }
+      ],
+      "start": 4.239,
+      "end": 15.449
+    },
+    {
+      "index": 1,
+      "text": "Et que quelqu'un vous tende la main",
+      "words": [
         {
           "index": 8,
           "word": "Et",
@@ -4416,15 +4416,7 @@
           "word": "vous",
           "start": 16.43,
           "end": 16.57
-        }
-      ],
-      "start": 14.648,
-      "end": 16.57
-    },
-    {
-      "index": 2,
-      "text": "tende la main Que votre chemin",
-      "words": [
+        },
         {
           "index": 12,
           "word": "tende",
@@ -4442,7 +4434,15 @@
           "word": "main",
           "start": 17.17,
           "end": 17.871
-        },
+        }
+      ],
+      "start": 15.509,
+      "end": 17.871
+    },
+    {
+      "index": 2,
+      "text": "Que votre chemin \u00e9vite les bombes",
+      "words": [
         {
           "index": 15,
           "word": "Que",
@@ -4460,15 +4460,7 @@
           "word": "chemin",
           "start": 18.351,
           "end": 18.932
-        }
-      ],
-      "start": 16.61,
-      "end": 18.932
-    },
-    {
-      "index": 3,
-      "text": "\u00e9vite les bombes Qui mettent l'heure",
-      "words": [
+        },
         {
           "index": 18,
           "word": "\u00e9vite",
@@ -4486,7 +4478,15 @@
           "word": "bombes",
           "start": 19.552,
           "end": 20.193
-        },
+        }
+      ],
+      "start": 17.911,
+      "end": 20.193
+    },
+    {
+      "index": 3,
+      "text": "Qu'il m\u00e8ne vers de calmes jardins",
+      "words": [
         {
           "index": 21,
           "word": "Qui",
@@ -4504,15 +4504,7 @@
           "word": "l'heure",
           "start": 20.693,
           "end": 20.914
-        }
-      ],
-      "start": 18.952,
-      "end": 20.914
-    },
-    {
-      "index": 4,
-      "text": "de calme jardin On vous souhaite",
-      "words": [
+        },
         {
           "index": 24,
           "word": "de",
@@ -4530,7 +4522,15 @@
           "word": "jardin",
           "start": 21.614,
           "end": 21.975
-        },
+        }
+      ],
+      "start": 20.233,
+      "end": 21.975
+    },
+    {
+      "index": 4,
+      "text": "Puisque l'avenir vous appartient",
+      "words": [
         {
           "index": 27,
           "word": "On",
@@ -4548,21 +4548,21 @@
           "word": "souhaite",
           "start": 61.251,
           "end": 61.432
-        }
-      ],
-      "start": 20.934,
-      "end": 61.432
-    },
-    {
-      "index": 5,
-      "text": "tout le bonheur du monde Et",
-      "words": [
+        },
         {
           "index": 30,
           "word": "tout",
           "start": 61.452,
           "end": 61.572
-        },
+        }
+      ],
+      "start": 61.091,
+      "end": 61.572
+    },
+    {
+      "index": 5,
+      "text": "Puisqu'on ne contr\u00f4le pas votre destin",
+      "words": [
         {
           "index": 31,
           "word": "le",
@@ -4592,21 +4592,21 @@
           "word": "Et",
           "start": 63.054,
           "end": 63.134
-        }
-      ],
-      "start": 61.452,
-      "end": 63.134
-    },
-    {
-      "index": 6,
-      "text": "que quelqu'un vous tende la main",
-      "words": [
+        },
         {
           "index": 36,
           "word": "que",
           "start": 63.154,
           "end": 63.314
-        },
+        }
+      ],
+      "start": 61.592,
+      "end": 63.314
+    },
+    {
+      "index": 6,
+      "text": "Que votre envol est pour demain",
+      "words": [
         {
           "index": 37,
           "word": "quelqu'un",
@@ -4636,21 +4636,21 @@
           "word": "main",
           "start": 64.856,
           "end": 65.397
-        }
-      ],
-      "start": 63.154,
-      "end": 65.397
-    },
-    {
-      "index": 7,
-      "text": "Que votre chemin \u00e9vite les ponts",
-      "words": [
+        },
         {
           "index": 42,
           "word": "Que",
           "start": 65.417,
           "end": 65.577
-        },
+        }
+      ],
+      "start": 63.334,
+      "end": 65.577
+    },
+    {
+      "index": 7,
+      "text": "Comme tout ce qu'on a \u00e0 vous offrir",
+      "words": [
         {
           "index": 43,
           "word": "votre",
@@ -4680,15 +4680,7 @@
           "word": "ponts",
           "start": 67.079,
           "end": 67.72
-        }
-      ],
-      "start": 65.417,
-      "end": 67.72
-    },
-    {
-      "index": 8,
-      "text": "Qui m'aident par deux calmes jardins",
-      "words": [
+        },
         {
           "index": 48,
           "word": "Qui",
@@ -4706,7 +4698,15 @@
           "word": "par",
           "start": 68.642,
           "end": 68.882
-        },
+        }
+      ],
+      "start": 65.617,
+      "end": 68.882
+    },
+    {
+      "index": 8,
+      "text": "Ne saurait toujours vous suffire",
+      "words": [
         {
           "index": 51,
           "word": "deux",
@@ -4724,15 +4724,7 @@
           "word": "jardins",
           "start": 69.363,
           "end": 70.244
-        }
-      ],
-      "start": 67.74,
-      "end": 70.244
-    },
-    {
-      "index": 9,
-      "text": "On vous souhaite tout le bonheur",
-      "words": [
+        },
         {
           "index": 54,
           "word": "On",
@@ -4744,7 +4736,15 @@
           "word": "vous",
           "start": 70.504,
           "end": 70.624
-        },
+        }
+      ],
+      "start": 68.902,
+      "end": 70.624
+    },
+    {
+      "index": 9,
+      "text": "Dans cette libert\u00e9 \u00e0 venir",
+      "words": [
         {
           "index": 56,
           "word": "souhaite",
@@ -4768,21 +4768,21 @@
           "word": "bonheur",
           "start": 71.245,
           "end": 71.626
-        }
-      ],
-      "start": 70.384,
-      "end": 71.626
-    },
-    {
-      "index": 10,
-      "text": "du monde Pour aujourd'hui comme pour",
-      "words": [
+        },
         {
           "index": 60,
           "word": "du",
           "start": 71.646,
           "end": 71.846
-        },
+        }
+      ],
+      "start": 70.645,
+      "end": 71.846
+    },
+    {
+      "index": 10,
+      "text": "Puisqu'on ne sera pas toujours l\u00e0",
+      "words": [
         {
           "index": 61,
           "word": "monde",
@@ -4812,21 +4812,21 @@
           "word": "pour",
           "start": 73.629,
           "end": 73.769
-        }
-      ],
-      "start": 71.646,
-      "end": 73.769
-    },
-    {
-      "index": 11,
-      "text": "demain Que votre soleil \u00e9classe ce",
-      "words": [
+        },
         {
           "index": 66,
           "word": "demain",
           "start": 73.929,
           "end": 74.931
-        },
+        }
+      ],
+      "start": 71.886,
+      "end": 74.931
+    },
+    {
+      "index": 11,
+      "text": "Comme on le fut aux premiers pas",
+      "words": [
         {
           "index": 67,
           "word": "Que",
@@ -4856,15 +4856,7 @@
           "word": "ce",
           "start": 76.453,
           "end": 76.713
-        }
-      ],
-      "start": 73.929,
-      "end": 76.713
-    },
-    {
-      "index": 12,
-      "text": "coup Qui brille d'amour de chaque",
-      "words": [
+        },
         {
           "index": 72,
           "word": "coup",
@@ -4876,7 +4868,15 @@
           "word": "Qui",
           "start": 77.294,
           "end": 77.414
-        },
+        }
+      ],
+      "start": 74.951,
+      "end": 77.414
+    },
+    {
+      "index": 12,
+      "text": "brille d'amour",
+      "words": [
         {
           "index": 74,
           "word": "brille",
@@ -4888,7 +4888,15 @@
           "word": "d'amour",
           "start": 77.775,
           "end": 78.015
-        },
+        }
+      ],
+      "start": 77.434,
+      "end": 78.015
+    },
+    {
+      "index": 13,
+      "text": "de chaque instant. On vous souhaite",
+      "words": [
         {
           "index": 76,
           "word": "de",
@@ -4900,15 +4908,7 @@
           "word": "chaque",
           "start": 115.056,
           "end": 115.897
-        }
-      ],
-      "start": 76.733,
-      "end": 115.897
-    },
-    {
-      "index": 13,
-      "text": "instant. On vous souhaite tout le",
-      "words": [
+        },
         {
           "index": 78,
           "word": "instant.",
@@ -4932,7 +4932,15 @@
           "word": "souhaite",
           "start": 118.159,
           "end": 118.399
-        },
+        }
+      ],
+      "start": 114.916,
+      "end": 118.399
+    },
+    {
+      "index": 14,
+      "text": "Et que quelqu'un vous tende la main",
+      "words": [
         {
           "index": 82,
           "word": "tout",
@@ -4944,15 +4952,7 @@
           "word": "le",
           "start": 118.619,
           "end": 118.719
-        }
-      ],
-      "start": 116.317,
-      "end": 118.719
-    },
-    {
-      "index": 14,
-      "text": "bonheur du monde et que quelqu'un",
-      "words": [
+        },
         {
           "index": 84,
           "word": "bonheur",
@@ -4982,21 +4982,21 @@
           "word": "que",
           "start": 120.201,
           "end": 120.341
-        },
+        }
+      ],
+      "start": 118.439,
+      "end": 120.341
+    },
+    {
+      "index": 15,
+      "text": "Que votre chemin \u00e9vite les bombes",
+      "words": [
         {
           "index": 89,
           "word": "quelqu'un",
           "start": 120.361,
           "end": 121.121
-        }
-      ],
-      "start": 118.759,
-      "end": 121.121
-    },
-    {
-      "index": 15,
-      "text": "vous tende la main. Que votre",
-      "words": [
+        },
         {
           "index": 90,
           "word": "vous",
@@ -5026,21 +5026,21 @@
           "word": "Que",
           "start": 122.463,
           "end": 122.603
-        },
+        }
+      ],
+      "start": 120.361,
+      "end": 122.603
+    },
+    {
+      "index": 16,
+      "text": "Qu'il m\u00e8ne vers de calmes jardins",
+      "words": [
         {
           "index": 95,
           "word": "votre",
           "start": 122.643,
           "end": 122.803
-        }
-      ],
-      "start": 121.161,
-      "end": 122.803
-    },
-    {
-      "index": 16,
-      "text": "chemin ait vite les peaux qui",
-      "words": [
+        },
         {
           "index": 96,
           "word": "chemin",
@@ -5070,21 +5070,21 @@
           "word": "peaux",
           "start": 124.104,
           "end": 124.765
-        },
+        }
+      ],
+      "start": 122.643,
+      "end": 124.765
+    },
+    {
+      "index": 17,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [
         {
           "index": 101,
           "word": "qui",
           "start": 124.785,
           "end": 125.005
-        }
-      ],
-      "start": 122.843,
-      "end": 125.005
-    },
-    {
-      "index": 17,
-      "text": "m'aiment leurs deux calmes jardins. On",
-      "words": [
+        },
         {
           "index": 102,
           "word": "m'aiment",
@@ -5120,21 +5120,21 @@
           "word": "On",
           "start": 127.427,
           "end": 127.527
-        }
-      ],
-      "start": 125.025,
-      "end": 127.527
-    },
-    {
-      "index": 18,
-      "text": "vous souhaite tout le bonheur du",
-      "words": [
+        },
         {
           "index": 108,
           "word": "vous",
           "start": 127.547,
           "end": 127.647
-        },
+        }
+      ],
+      "start": 124.785,
+      "end": 127.647
+    },
+    {
+      "index": 18,
+      "text": "Pour aujourd'hui, comme pour demain",
+      "words": [
         {
           "index": 109,
           "word": "souhaite",
@@ -5166,12 +5166,12 @@
           "end": 128.608
         }
       ],
-      "start": 127.547,
+      "start": 127.667,
       "end": 128.608
     },
     {
       "index": 19,
-      "text": "monde pour aujourd'hui comme pour demain.",
+      "text": "Que votre soleil \u00e9claircisse l'ombre",
       "words": [
         {
           "index": 114,
@@ -5202,21 +5202,21 @@
           "word": "pour",
           "start": 130.67,
           "end": 130.93
-        },
+        }
+      ],
+      "start": 128.628,
+      "end": 130.93
+    },
+    {
+      "index": 20,
+      "text": "Qu'il brille d'amour au quotidien",
+      "words": [
         {
           "index": 119,
           "word": "demain.",
           "start": 130.95,
           "end": 131.971
-        }
-      ],
-      "start": 128.628,
-      "end": 131.971
-    },
-    {
-      "index": 20,
-      "text": "Que votre soleil ait Je sais",
-      "words": [
+        },
         {
           "index": 120,
           "word": "Que",
@@ -5240,7 +5240,15 @@
           "word": "ait",
           "start": 132.752,
           "end": 132.812
-        },
+        }
+      ],
+      "start": 130.95,
+      "end": 132.812
+    },
+    {
+      "index": 21,
+      "text": "Toute une vie s'offre devant vous",
+      "words": [
         {
           "index": 124,
           "word": "Je",
@@ -5252,15 +5260,7 @@
           "word": "sais",
           "start": 147.462,
           "end": 147.682
-        }
-      ],
-      "start": 131.991,
-      "end": 147.682
-    },
-    {
-      "index": 21,
-      "text": "pas quel monde en vous la\u00eetra",
-      "words": [
+        },
         {
           "index": 126,
           "word": "pas",
@@ -5284,7 +5284,15 @@
           "word": "en",
           "start": 148.463,
           "end": 148.583
-        },
+        }
+      ],
+      "start": 147.282,
+      "end": 148.583
+    },
+    {
+      "index": 22,
+      "text": "Tant de r\u00eaves \u00e0 vivre jusqu'au bout",
+      "words": [
         {
           "index": 130,
           "word": "vous",
@@ -5296,15 +5304,7 @@
           "word": "la\u00eetra",
           "start": 148.843,
           "end": 151.044
-        }
-      ],
-      "start": 147.702,
-      "end": 151.044
-    },
-    {
-      "index": 22,
-      "text": "On fait notre pied seulement parfois",
-      "words": [
+        },
         {
           "index": 132,
           "word": "On",
@@ -5334,21 +5334,21 @@
           "word": "seulement",
           "start": 151.845,
           "end": 152.305
-        },
+        }
+      ],
+      "start": 148.603,
+      "end": 152.305
+    },
+    {
+      "index": 23,
+      "text": "S\u00fbrement tant de joies au rendez-vous",
+      "words": [
         {
           "index": 137,
           "word": "parfois",
           "start": 152.325,
           "end": 153.446
-        }
-      ],
-      "start": 151.124,
-      "end": 153.446
-    },
-    {
-      "index": 23,
-      "text": "Je j'esp\u00e8re que \u00e7a suffira Pas",
-      "words": [
+        },
         {
           "index": 138,
           "word": "Je",
@@ -5386,12 +5386,12 @@
           "end": 157.048
         }
       ],
-      "start": 153.486,
+      "start": 152.325,
       "end": 157.048
     },
     {
       "index": 24,
-      "text": "\u00e0 sauver votre insouciance On souhaite",
+      "text": "\u00e0 sauver votre insouciance",
       "words": [
         {
           "index": 144,
@@ -5416,7 +5416,15 @@
           "word": "insouciance",
           "start": 158.449,
           "end": 159.67
-        },
+        }
+      ],
+      "start": 157.168,
+      "end": 159.67
+    },
+    {
+      "index": 25,
+      "text": "On souhaite",
+      "words": [
         {
           "index": 148,
           "word": "On",
@@ -5430,12 +5438,12 @@
           "end": 165.984
         }
       ],
-      "start": 157.168,
+      "start": 165.604,
       "end": 165.984
     },
     {
-      "index": 25,
-      "text": "tout le bonheur du monde Et",
+      "index": 26,
+      "text": "De choisir quelle sera votre voie",
       "words": [
         {
           "index": 150,
@@ -5478,8 +5486,8 @@
       "end": 167.706
     },
     {
-      "index": 26,
-      "text": "que quelqu'un vous tende la main",
+      "index": 27,
+      "text": "Et o\u00f9 celle-ci vous emm\u00e8nera",
       "words": [
         {
           "index": 156,
@@ -5522,8 +5530,8 @@
       "end": 169.927
     },
     {
-      "index": 27,
-      "text": "Que votre chemin \u00e9vite les ponts",
+      "index": 28,
+      "text": "J\u2019esp\u00e8re juste que vous prendrez l\u2019temps",
       "words": [
         {
           "index": 162,
@@ -5560,15 +5568,7 @@
           "word": "ponts",
           "start": 171.768,
           "end": 172.289
-        }
-      ],
-      "start": 169.967,
-      "end": 172.289
-    },
-    {
-      "index": 28,
-      "text": "Qui mettent leur deux c\u00e2bles jardins",
-      "words": [
+        },
         {
           "index": 168,
           "word": "Qui",
@@ -5580,7 +5580,15 @@
           "word": "mettent",
           "start": 172.569,
           "end": 172.929
-        },
+        }
+      ],
+      "start": 169.967,
+      "end": 172.929
+    },
+    {
+      "index": 29,
+      "text": "De profiter de chaque instant",
+      "words": [
         {
           "index": 170,
           "word": "leur",
@@ -5604,21 +5612,21 @@
           "word": "jardins",
           "start": 173.91,
           "end": 174.59
-        }
-      ],
-      "start": 172.309,
-      "end": 174.59
-    },
-    {
-      "index": 29,
-      "text": "On souhaite tout le bonheur du",
-      "words": [
+        },
         {
           "index": 174,
           "word": "On",
           "start": 174.651,
           "end": 174.711
-        },
+        }
+      ],
+      "start": 172.989,
+      "end": 174.711
+    },
+    {
+      "index": 30,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [
         {
           "index": 175,
           "word": "souhaite",
@@ -5648,15 +5656,7 @@
           "word": "du",
           "start": 176.232,
           "end": 176.352
-        }
-      ],
-      "start": 174.651,
-      "end": 176.352
-    },
-    {
-      "index": 30,
-      "text": "monde Pour aujourd'hui comme pour demain",
-      "words": [
+        },
         {
           "index": 180,
           "word": "monde",
@@ -5674,7 +5674,15 @@
           "word": "aujourd'hui",
           "start": 177.332,
           "end": 177.913
-        },
+        }
+      ],
+      "start": 174.731,
+      "end": 177.913
+    },
+    {
+      "index": 31,
+      "text": "Et que quelqu'un vous tende la main",
+      "words": [
         {
           "index": 183,
           "word": "comme",
@@ -5692,15 +5700,7 @@
           "word": "demain",
           "start": 178.473,
           "end": 179.474
-        }
-      ],
-      "start": 176.532,
-      "end": 179.474
-    },
-    {
-      "index": 31,
-      "text": "Que votre soleil et la cistone",
-      "words": [
+        },
         {
           "index": 186,
           "word": "Que",
@@ -5724,7 +5724,15 @@
           "word": "et",
           "start": 180.275,
           "end": 180.515
-        },
+        }
+      ],
+      "start": 177.953,
+      "end": 180.515
+    },
+    {
+      "index": 32,
+      "text": "Que votre chemin \u00e9vite les bombes",
+      "words": [
         {
           "index": 190,
           "word": "la",
@@ -5736,15 +5744,7 @@
           "word": "cistone",
           "start": 180.675,
           "end": 181.816
-        }
-      ],
-      "start": 179.494,
-      "end": 181.816
-    },
-    {
-      "index": 32,
-      "text": "Qui brille d'amour au quotidien On",
-      "words": [
+        },
         {
           "index": 192,
           "word": "Qui",
@@ -5768,7 +5768,15 @@
           "word": "au",
           "start": 183.237,
           "end": 183.317
-        },
+        }
+      ],
+      "start": 180.555,
+      "end": 183.317
+    },
+    {
+      "index": 33,
+      "text": "Qu'il m\u00e8ne vers de calmes jardins",
+      "words": [
         {
           "index": 196,
           "word": "quotidien",
@@ -5780,15 +5788,7 @@
           "word": "On",
           "start": 184.297,
           "end": 184.397
-        }
-      ],
-      "start": 181.836,
-      "end": 184.397
-    },
-    {
-      "index": 33,
-      "text": "souhaite tout le bonheur du monde",
-      "words": [
+        },
         {
           "index": 198,
           "word": "souhaite",
@@ -5812,7 +5812,15 @@
           "word": "bonheur",
           "start": 185.318,
           "end": 185.698
-        },
+        }
+      ],
+      "start": 183.337,
+      "end": 185.698
+    },
+    {
+      "index": 34,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [
         {
           "index": 202,
           "word": "du",
@@ -5824,15 +5832,7 @@
           "word": "monde",
           "start": 185.899,
           "end": 186.599
-        }
-      ],
-      "start": 184.437,
-      "end": 186.599
-    },
-    {
-      "index": 34,
-      "text": "Oh oui, tout le bonheur du",
-      "words": [
+        },
         {
           "index": 204,
           "word": "Oh",
@@ -5870,12 +5870,12 @@
           "end": 188.24
         }
       ],
-      "start": 186.699,
+      "start": 185.738,
       "end": 188.24
     },
     {
       "index": 35,
-      "text": "monde On souhaite tout le bonheur",
+      "text": "Pour aujourd'hui, comme pour demain",
       "words": [
         {
           "index": 210,
@@ -5906,21 +5906,21 @@
           "word": "le",
           "start": 189.921,
           "end": 190.041
-        },
+        }
+      ],
+      "start": 188.42,
+      "end": 190.041
+    },
+    {
+      "index": 36,
+      "text": "Que votre soleil \u00e9claircisse l'ombre",
+      "words": [
         {
           "index": 215,
           "word": "bonheur",
           "start": 190.081,
           "end": 190.442
-        }
-      ],
-      "start": 188.42,
-      "end": 190.442
-    },
-    {
-      "index": 36,
-      "text": "du monde Oh oui, tout le",
-      "words": [
+        },
         {
           "index": 216,
           "word": "du",
@@ -5944,7 +5944,15 @@
           "word": "oui,",
           "start": 191.462,
           "end": 192.103
-        },
+        }
+      ],
+      "start": 190.081,
+      "end": 192.103
+    },
+    {
+      "index": 37,
+      "text": "Qu'il brille d'amour au quotidien",
+      "words": [
         {
           "index": 220,
           "word": "tout",
@@ -5956,15 +5964,7 @@
           "word": "le",
           "start": 192.303,
           "end": 192.403
-        }
-      ],
-      "start": 190.482,
-      "end": 192.403
-    },
-    {
-      "index": 37,
-      "text": "bonheur du monde Tout le bonheur",
-      "words": [
+        },
         {
           "index": 222,
           "word": "bonheur",
@@ -5982,7 +5982,15 @@
           "word": "monde",
           "start": 193.024,
           "end": 193.584
-        },
+        }
+      ],
+      "start": 192.123,
+      "end": 193.584
+    },
+    {
+      "index": 38,
+      "text": "Tout le bonheur du monde",
+      "words": [
         {
           "index": 225,
           "word": "Tout",
@@ -6000,15 +6008,7 @@
           "word": "bonheur",
           "start": 194.264,
           "end": 194.445
-        }
-      ],
-      "start": 192.463,
-      "end": 194.445
-    },
-    {
-      "index": 38,
-      "text": "du monde On me souhaite tout",
-      "words": [
+        },
         {
           "index": 228,
           "word": "du",
@@ -6020,7 +6020,15 @@
           "word": "monde",
           "start": 194.645,
           "end": 194.885
-        },
+        }
+      ],
+      "start": 193.684,
+      "end": 194.885
+    },
+    {
+      "index": 39,
+      "text": "On me souhaite tout",
+      "words": [
         {
           "index": 230,
           "word": "On",
@@ -6046,12 +6054,12 @@
           "end": 199.529
         }
       ],
-      "start": 194.465,
+      "start": 198.824,
       "end": 199.529
     },
     {
-      "index": 39,
-      "text": "le bonheur du monde",
+      "index": 40,
+      "text": "On fait de notre mieux, seulement pars fois",
       "words": [
         {
           "index": 234,
@@ -6080,8 +6088,177 @@
       ],
       "start": 199.569,
       "end": 200.435
+    },
+    {
+      "index": 41,
+      "text": "J\u2019ose esp\u00e9rer que cela suffira",
+      "words": [],
+      "start": 131.3432989539902,
+      "end": 134.79970155804259
+    },
+    {
+      "index": 42,
+      "text": "Pas \u00e0 sauver votre insouciance",
+      "words": [],
+      "start": 134.79970155804259,
+      "end": 138.25610416209497
+    },
+    {
+      "index": 43,
+      "text": "Mais \u00e0 apaiser notre conscience",
+      "words": [],
+      "start": 138.25610416209494,
+      "end": 141.71250676614733
+    },
+    {
+      "index": 44,
+      "text": "Pour le reste j\u2019me dois de vous faire confiance",
+      "words": [],
+      "start": 141.71250676614733,
+      "end": 145.1689093701997
+    },
+    {
+      "index": 45,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [],
+      "start": 145.16890937019969,
+      "end": 148.62531197425207
+    },
+    {
+      "index": 46,
+      "text": "Et que quelqu'un vous tende la main",
+      "words": [],
+      "start": 148.62531197425207,
+      "end": 152.08171457830446
+    },
+    {
+      "index": 47,
+      "text": "Que votre chemin \u00e9vite les bombes",
+      "words": [],
+      "start": 152.08171457830443,
+      "end": 155.5381171823568
+    },
+    {
+      "index": 48,
+      "text": "Qu'il m\u00e8ne vers de calmes jardins",
+      "words": [],
+      "start": 155.5381171823568,
+      "end": 158.9945197864092
+    },
+    {
+      "index": 49,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [],
+      "start": 158.9945197864092,
+      "end": 162.45092239046159
+    },
+    {
+      "index": 50,
+      "text": "Pour aujourd'hui, comme pour demain",
+      "words": [],
+      "start": 162.45092239046156,
+      "end": 165.90732499451394
+    },
+    {
+      "index": 51,
+      "text": "Que votre soleil \u00e9claircisse l'ombre",
+      "words": [],
+      "start": 165.90732499451394,
+      "end": 169.36372759856633
+    },
+    {
+      "index": 52,
+      "text": "Qu'il brille d'amour au quotidien",
+      "words": [],
+      "start": 169.3637275985663,
+      "end": 172.82013020261869
+    },
+    {
+      "index": 53,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [],
+      "start": 172.82013020261869,
+      "end": 176.27653280667107
+    },
+    {
+      "index": 54,
+      "text": "Oh oui, tout le bonheur du monde",
+      "words": [],
+      "start": 176.27653280667104,
+      "end": 179.73293541072343
+    },
+    {
+      "index": 55,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [],
+      "start": 179.73293541072343,
+      "end": 183.1893380147758
+    },
+    {
+      "index": 56,
+      "text": "Oh oui, tout le bonheur du monde",
+      "words": [],
+      "start": 183.1893380147758,
+      "end": 186.6457406188282
+    },
+    {
+      "index": 57,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [],
+      "start": 186.64574061882817,
+      "end": 190.10214322288056
+    },
+    {
+      "index": 58,
+      "text": "Oh oui, tout le bonheur du monde",
+      "words": [],
+      "start": 190.10214322288056,
+      "end": 193.55854582693294
+    },
+    {
+      "index": 59,
+      "text": "Que votre chemin \u00e9vite les bombes",
+      "words": [],
+      "start": 193.5585458269329,
+      "end": 197.0149484309853
+    },
+    {
+      "index": 60,
+      "text": "Qu'il m\u00e8ne vers de calmes jardins",
+      "words": [],
+      "start": 197.0149484309853,
+      "end": 200.47135103503769
+    },
+    {
+      "index": 61,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [],
+      "start": 200.47135103503769,
+      "end": 203.92775363909007
+    },
+    {
+      "index": 62,
+      "text": "Oh oui, tout le bonheur du monde",
+      "words": [],
+      "start": 203.92775363909004,
+      "end": 207.38415624314243
+    },
+    {
+      "index": 63,
+      "text": "On vous souhaite tout le bonheur du monde",
+      "words": [],
+      "start": 207.38415624314243,
+      "end": 210.8405588471948
+    },
+    {
+      "index": 64,
+      "text": "Oh oui, tout le bonheur du monde",
+      "words": [],
+      "start": 210.84055884719479,
+      "end": 214.29696145124717
     }
   ],
+  "rhythm_segments": [],
   "sections": [
     {
       "name": "Intro",
@@ -6127,12 +6304,12 @@
     }
   ],
   "diagnostics": {
-    "processing_time_seconds": 52.019389,
-    "alignment_quality": 0.5396825396825397,
+    "processing_time_seconds": 63.381565,
+    "alignment_quality": 0.5876543209876544,
     "alignment_model": "small",
-    "match_ratio": 0.5396825396825397,
+    "match_ratio": 0.5876543209876544,
     "pitch_coverage": 0.27385892116182575,
-    "processed_at": "2026-05-30T23:01:35.080074",
+    "processed_at": "2026-05-31T18:28:31.222471",
     "processing_version": "2.0"
   }
 }

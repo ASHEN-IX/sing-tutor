@@ -202,6 +202,22 @@ def test_pitch_analysis_endpoint_rejects_non_audio_upload():
     assert "audio" in response.json()["detail"].lower()
 
 
+def test_processing_status_falls_back_when_database_lookup_fails(monkeypatch):
+    async def _get_db():
+        raise RuntimeError("database offline")
+
+    monkeypatch.setattr(songs_api, "get_database", _get_db)
+    monkeypatch.setattr(songs_api.storage_service, "file_exists", lambda song_id, filename: True)
+    monkeypatch.setattr(songs_api.storage_service, "song_exists", lambda song_id: True)
+
+    response = client.get("/api/songs/song_001/status")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "completed"
+    assert payload["progress"] == 1.0
+
+
 def test_websocket_pitch_stream_sends_pitch_point():
     with client.websocket_connect("/ws/pitch/rec_test") as websocket:
         payload = websocket.receive_json()

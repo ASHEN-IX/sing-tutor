@@ -147,7 +147,7 @@ async def upload_song(
         raise
     except Exception as e:
         logger.error(f"Upload failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="We could not upload this song. Please try again.")
 
 
 @router.post(
@@ -225,7 +225,7 @@ async def process_song(
             {"_id": song_id},
             {"$set": {"status": "failed", "error": str(e)}}
         )
-        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="We could not start processing this song. Please try again.")
 
 
 async def _process_song_background(song_id: str) -> None:
@@ -295,8 +295,15 @@ async def get_processing_status(song_id: str) -> ProcessingStatus:
         curl http://localhost:8000/api/songs/550e8400-e29b-41d4-a716-446655440000/status
     """
     try:
-        db = await get_database()
-        status_info = await db.songs.find_one({"_id": song_id})
+        status_info = None
+        db_lookup_failed = False
+
+        try:
+            db = await get_database()
+            status_info = await db.songs.find_one({"_id": song_id})
+        except Exception as db_error:
+            db_lookup_failed = True
+            logger.warning("Status DB lookup failed for %s: %s", song_id, db_error)
 
         if not status_info:
             # Try to check if completed reference exists
@@ -307,6 +314,15 @@ async def get_processing_status(song_id: str) -> ProcessingStatus:
                     progress=1.0,
                     message="Processing completed"
                 )
+
+            if storage_service.song_exists(song_id):
+                return ProcessingStatus(
+                    song_id=song_id,
+                    status="processing" if db_lookup_failed else "unknown",
+                    progress=0.5 if db_lookup_failed else 0.0,
+                    message="Processing status unavailable; using filesystem fallback"
+                )
+
             raise HTTPException(status_code=404, detail=f"Song not found: {song_id}")
 
         return ProcessingStatus(
@@ -321,7 +337,7 @@ async def get_processing_status(song_id: str) -> ProcessingStatus:
         raise
     except Exception as e:
         logger.error(f"Status check failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Status check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="We could not check this song right now. Please try again.")
 
 
 @router.get(
@@ -354,10 +370,10 @@ async def get_reference(song_id: str) -> SongReference:
     except HTTPException:
         raise
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Reference not found for {song_id}")
+        raise HTTPException(status_code=404, detail="Reference data is not available yet.")
     except Exception as e:
         logger.error(f"Failed to get reference: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve reference: {str(e)}")
+        raise HTTPException(status_code=500, detail="We could not load the song reference. Please try again.")
 
 @router.get(
     "/{song_id}/audio",
@@ -381,10 +397,10 @@ async def stream_audio(song_id: str):
     except HTTPException:
         raise
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Audio not found for {song_id}")
+        raise HTTPException(status_code=404, detail="Audio file is not available.")
     except Exception as e:
         logger.error("Failed to stream audio for %s: %s", song_id, e)
-        raise HTTPException(status_code=500, detail=f"Failed to stream audio: {e}")
+        raise HTTPException(status_code=500, detail="We could not stream the audio right now. Please try again.")
 
 @router.get(
     "/{song_id}/preview",
@@ -431,10 +447,10 @@ async def get_preview(song_id: str) -> SongPreviewResponse:
     except HTTPException:
         raise
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Reference not found for {song_id}")
+        raise HTTPException(status_code=404, detail="Reference data is not available yet.")
     except Exception as e:
         logger.error(f"Failed to get preview: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve preview: {str(e)}")
+        raise HTTPException(status_code=500, detail="We could not load the song preview. Please try again.")
 
 
 @router.delete(
@@ -468,4 +484,4 @@ async def delete_song(song_id: str) -> None:
         raise
     except Exception as e:
         logger.error(f"Failed to delete song: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete song: {str(e)}")
+        raise HTTPException(status_code=500, detail="We could not delete this song. Please try again.")

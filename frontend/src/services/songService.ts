@@ -5,6 +5,8 @@
 
 import axios from 'axios';
 import { API_BASE_URL } from './api';
+import { getAccessToken } from './authStore';
+import { getFriendlyApiErrorMessage } from './errorMessages';
 import {
   SongUploadResponse,
   ProcessingStatus,
@@ -13,8 +15,17 @@ import {
   UploadFormData,
 } from "../types/songReference";
 
-const api = axios.create({
+const authApi = axios.create({
   baseURL: API_BASE_URL,
+});
+
+authApi.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 const BASE_URL = "/api/songs";
@@ -31,7 +42,7 @@ export async function uploadSong(formData: UploadFormData): Promise<SongUploadRe
   data.append("language", formData.language);
   data.append("difficulty", formData.difficulty);
 
-  const response = await api.post<SongUploadResponse>(`${BASE_URL}/upload`, data, {
+  const response = await authApi.post<SongUploadResponse>(`${BASE_URL}/upload`, data, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -45,7 +56,7 @@ export async function uploadSong(formData: UploadFormData): Promise<SongUploadRe
  * Processing runs asynchronously; use getProcessingStatus() to check progress
  */
 export async function processSong(songId: string): Promise<ProcessingStatus> {
-  const response = await api.post<ProcessingStatus>(
+  const response = await authApi.post<ProcessingStatus>(
     `${BASE_URL}/${songId}/process`
   );
   return response.data;
@@ -55,7 +66,7 @@ export async function processSong(songId: string): Promise<ProcessingStatus> {
  * Get current processing status
  */
 export async function getProcessingStatus(songId: string): Promise<ProcessingStatus> {
-  const response = await api.get<ProcessingStatus>(
+  const response = await authApi.get<ProcessingStatus>(
     `${BASE_URL}/${songId}/status`
   );
   return response.data;
@@ -99,7 +110,7 @@ export async function waitForProcessingCompletion(
  * Only available after processing completes
  */
 export async function getReference(songId: string): Promise<SongReference> {
-  const response = await api.get<SongReference>(
+  const response = await authApi.get<SongReference>(
     `${BASE_URL}/${songId}/reference`
   );
   return response.data;
@@ -110,7 +121,7 @@ export async function getReference(songId: string): Promise<SongReference> {
  * For quick display without loading full reference
  */
 export async function getSongPreview(songId: string): Promise<SongPreviewResponse> {
-  const response = await api.get<SongPreviewResponse>(
+  const response = await authApi.get<SongPreviewResponse>(
     `${BASE_URL}/${songId}/preview`
   );
   return response.data;
@@ -120,21 +131,12 @@ export async function getSongPreview(songId: string): Promise<SongPreviewRespons
  * Delete a song and all its files
  */
 export async function deleteSong(songId: string): Promise<void> {
-  await api.delete(`${BASE_URL}/${songId}`);
+  await authApi.delete(`${BASE_URL}/${songId}`);
 }
 
 /**
  * Handle API errors with user-friendly messages
  */
 export function handleSongServiceError(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    const detail = error.response?.data?.detail || error.response?.data?.message;
-    return typeof detail === "string" ? detail : "Song request failed";
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "An unknown error occurred";
+  return getFriendlyApiErrorMessage(error, "Song request failed. Please try again.");
 }

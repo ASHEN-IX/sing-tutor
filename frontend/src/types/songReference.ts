@@ -24,7 +24,7 @@ export interface LyricsWord {
 }
 
 /**
- * Lyric line grouping with timing
+ * Sentence-level lyric display timeline item.
  */
 export interface LyricLine {
   index: number;
@@ -32,6 +32,17 @@ export interface LyricLine {
   words: LyricsWord[];
   start: number;
   end: number;
+}
+
+/**
+ * Rhythm display timeline item used when a song has no lyrics.
+ */
+export interface RhythmSegment {
+  index: number;
+  text: string;
+  start: number;
+  end: number;
+  beat?: number | null;
 }
 
 /**
@@ -69,8 +80,12 @@ export interface SongReference {
   key: string;
   beats: number[];
   pitch_data: PitchDataPoint[];
+  /** Word-level lyrics used for lower-level analysis, not sentence display. */
   lyrics: LyricsWord[];
+  /** Canonical sentence-level display timeline for the learning UI. */
   lyric_lines?: LyricLine[];
+  /** Canonical rhythm display timeline when lyric_lines is empty. */
+  rhythm_segments?: RhythmSegment[];
   sections: SongSection[];
   diagnostics: ProcessingDiagnostics;
 }

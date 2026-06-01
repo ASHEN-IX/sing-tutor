@@ -46,12 +46,12 @@ class LyricsWord(BaseModel):
 
 
 class LyricLine(BaseModel):
-    """Lyric line grouping with word timings."""
-    index: int = Field(..., description="Line index in lyrics")
-    text: str = Field(..., description="Full line text")
-    words: List[LyricsWord] = Field(default_factory=list, description="Words in the line")
-    start: float = Field(..., ge=0, description="Line start time in seconds")
-    end: float = Field(..., ge=0, description="Line end time in seconds")
+    """Sentence-level lyric display unit with word timings."""
+    index: int = Field(..., description="Sentence index in lyrics")
+    text: str = Field(..., description="Sentence text with original punctuation")
+    words: List[LyricsWord] = Field(default_factory=list, description="Words in the sentence")
+    start: float = Field(..., ge=0, description="Sentence start time in seconds")
+    end: float = Field(..., ge=0, description="Sentence end time in seconds")
 
     class Config:
         json_schema_extra = {
@@ -68,6 +68,26 @@ class LyricLine(BaseModel):
                 ],
                 "start": 0.0,
                 "end": 1.2
+            }
+        }
+
+
+class RhythmSegment(BaseModel):
+    """No-lyrics rhythm display unit covering part of the song timeline."""
+    index: int = Field(..., description="Rhythm segment index")
+    text: str = Field(..., description="Display label for the rhythm segment")
+    start: float = Field(..., ge=0, description="Segment start time in seconds")
+    end: float = Field(..., ge=0, description="Segment end time in seconds")
+    beat: Optional[float] = Field(default=None, ge=0, description="Beat position used for this segment")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "index": 0,
+                "text": "Beat 1",
+                "start": 0.0,
+                "end": 0.714,
+                "beat": 0.0
             }
         }
 
@@ -128,8 +148,9 @@ class SongReference(BaseModel):
     key: str = Field(..., description="Musical key (e.g., 'A Major', 'C Minor')")
     beats: List[float] = Field(default_factory=list, description="Beat positions (seconds)")
     pitch_data: List[PitchDataPoint] = Field(default_factory=list, description="Pitch contour")
-    lyrics: List[LyricsWord] = Field(default_factory=list, description="Words with timings")
-    lyric_lines: List[LyricLine] = Field(default_factory=list, description="Lyric lines with timings")
+    lyrics: List[LyricsWord] = Field(default_factory=list, description="Word-level lyrics for analysis")
+    lyric_lines: List[LyricLine] = Field(default_factory=list, description="Sentence-level lyric display timeline")
+    rhythm_segments: List[RhythmSegment] = Field(default_factory=list, description="No-lyrics rhythm display timeline")
     sections: List[SongSection] = Field(default_factory=list, description="Song sections")
     diagnostics: ProcessingDiagnostics = Field(..., description="Processing metadata")
 
@@ -148,6 +169,7 @@ class SongReference(BaseModel):
                 "pitch_data": [],
                 "lyrics": [],
                 "lyric_lines": [],
+                "rhythm_segments": [],
                 "sections": [],
                 "diagnostics": {
                     "processing_time_seconds": 14.2,
